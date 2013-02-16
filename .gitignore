@@ -1,3 +1,8 @@
+#Unnecesarry course stuff
+Oving1/
+theory/
+*.pdf
+
 # Object files
 *.o
 
