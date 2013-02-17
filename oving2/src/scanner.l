@@ -18,6 +18,7 @@ IDENT [a-zA-Z_][a-zA-Z_0-9]*
 STRING \"[^\n\"]*\"
 DIGIT [0-9]
 WHITESPACE [ \t\n]
+COMMENT \/\/[^\n]*\n
 %%
 FUNC        { RETURN( FUNC ); }
 PRINT       { RETURN( PRINT ); }
@@ -39,6 +40,11 @@ VAR         { RETURN( VAR ); }
 \-          { RETURN( '-' ); }
 \*          { RETURN( '*' ); }
 \/          { RETURN( '/' ); }
+\(          { RETURN( '(' ); }
+\)          { RETURN( ')' ); }
+\{          { RETURN( '{' ); }
+\}          { RETURN( '}' ); }
+,           { RETURN( ',' ); }
 
 \<          { RETURN( '<' ); }
 \>          { RETURN( '>' ); }
@@ -51,6 +57,7 @@ VAR         { RETURN( VAR ); }
 {DIGIT}+    { RETURN( NUMBER ); }
 {IDENT}     { RETURN( IDENTIFIER ); }
 
+{COMMENT}    /*Ignore comments*/
 {WHITESPACE}+  /*IGNORE WHITESPACE*/
 .           { RETURN( yytext[0] ); }
 %%
