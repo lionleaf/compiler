@@ -3,6 +3,14 @@ Oving1/
 theory/
 *.pdf
 
+# Generated files
+bin/
+obj/
+testOutput/
+work/
+
+#vim swp files
+*.swp
 # Object files
 *.o
 
