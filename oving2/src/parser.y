@@ -57,12 +57,12 @@ int yylex ( void );                 /* Defined in the generated scanner */
 
 /* Tokens for all the key words in VSL */
 %token NUMBER STRING IDENTIFIER ASSIGN FUNC PRINT RETURN CONTINUE
-%token IF THEN ELSE FI WHILE DO DONE VAR FOR TO 
+%token IF THEN ELSE FI WHILE DO DONE VAR FOR TO
 %token EQUAL GEQUAL LEQUAL NEQUAL
 
 
 /*
- * Operator precedences: 
+ * Operator precedences:
  * All operators execept unary minus are left associative
  * Operators have same precendence as other operators on the same line,
  * higher precedence than those above, and lower than those below
@@ -89,14 +89,119 @@ int yylex ( void );                 /* Defined in the generated scanner */
  * the number of passes over the syntax tree), but sticking to a parser which
  * only generates a tree makes it easier to rule it out as an error source in
  * later debugging.
- */ 
+ */
+ %%
+Program         : FunctionList
+                ;
+
+FunctionList    : Function
+                | FunctionList Function
+                ;
+
+StatementList   : Statement
+                | StatementList Statement
+                ;
+
+PrintList       : PrintItem
+                | PrintList ',' PrintItem
+                ;
+
+ExpressionList  : Expression
+                | ExpressionList ',' Expression
+                ;
+
+VariableList    : Variable
+                | VariableList ',' Variable
+                ;
+
+DeclarationList : DeclarationList Declaration
+                | /*epsilon*/
+                ;
+
+ArgumentList    : ExpressionList
+                | /*epsilon*/
+                ;
+
+ParameterList   : VariableList
+                | /*epsilon*/
+                ;
+
+Function        : FUNC Variable '(' ParameterList ')' Statement
+                ;
+
+Statement       : AssignmentStatement
+                | ReturnStatement
+                | IfStatement
+                | WhileStatement
+                | ForStatement
+                | NullStatement
+                | PrintStatement
+                | Block
+                ;
+
+Block           : '{' DeclarationList StatementList '}'
+                ;
+
+AssignmentStatement : Variable ASSIGN Expression
+                    ;
+
+ReturnStatement : RETURN Expression
+                ;
+
+PrintStatement  : PRINT PrintList
+                ;
+
+IfStatement     : IF Expression THEN Statement FI
+                | IF Expression THEN Statement ELSE Statement FI
+                ;
+
+WhileStatement  : WHILE Expression DO Statement DONE
+                ;
+
+ForStatement    : FOR AssignmentStatement TO Expression DO Statement DONE
+                ;
+
+NullStatement   : CONTINUE
+                ;
+
+Expression      : Expression '+' Expression
+                | Expression '-' Expression
+                | Expression '*' Expression
+                | Expression '/' Expression
+                | Expression '<' Expression
+                | Expression '>' Expression
+                | '-' Expression
+                | Expression EQUAL Expression
+                | Expression NEQUAL Expression
+                | Expression LEQUAL Expression
+                | Expression GEQUAL Expression
+                | '(' Expression ')'
+                | Integer
+                | Variable
+                | Variable '(' ArgumentList ')'
+                ;
+
+Declaration     : VAR VariableList
+                ;
+
+Variable        : IDENTIFIER
+                ;
+
+Integer         : NUMBER
+                ;
+
+PrintItem       : Expression
+                | Text
+                ;
+
+Text            : STRING
+                ;
+
+/*program: '+' {
+    root = node_init ( malloc(sizeof(node_t)), program_n, NULL, 1, $1);}
+    ;*/
 
 %%
-program: '+' {
-    root = node_init ( malloc(sizeof(node_t)), program_n, NULL, 1, $1);}
-    ;
-
-%% 
 
 /*
  * This function is called with an error description when parsing fails.
