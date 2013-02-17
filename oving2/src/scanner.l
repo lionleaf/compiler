@@ -15,7 +15,7 @@
 %option yylineno
 
 IDENT [a-zA-Z_][a-zA-Z_0-9]*
-STRING \"[^\n\"]*\"
+STRING \"([^\n\"]|\\\")*\"
 DIGIT [0-9]
 WHITESPACE [ \t\n]
 COMMENT \/\/[^\n]*\n
@@ -59,7 +59,7 @@ VAR         { RETURN( VAR ); }
 
 {COMMENT}    /*Ignore comments*/
 {WHITESPACE}+  /*IGNORE WHITESPACE*/
-.           { RETURN( yytext[0] ); }
+.
 %%
 
 /*int main(int argc, char **argv)
