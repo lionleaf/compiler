@@ -91,115 +91,123 @@ int yylex ( void );                 /* Defined in the generated scanner */
  * later debugging.
  */
  %%
-Program         : FunctionList
+Program         : FunctionList {$$ = CN1N(program_n);root = $$;}
                 ;
 
-FunctionList    : Function
-                | FunctionList Function
+FunctionList    : Function      {$$ = CN1N(function_list_n, $1);}
+                | FunctionList Function {$$ = CN2N(function_list_n, $1, $2);}
                 ;
 
-StatementList   : Statement
-                | StatementList Statement
+StatementList   : Statement                 {$$ = CN1N(statement_list_n, $1);}
+                | StatementList Statement   {$$ = CN2N(statement_list_n,$1,$2);}
                 ;
 
-PrintList       : PrintItem
-                | PrintList ',' PrintItem
+PrintList       : PrintItem                 {$$ = CN1N(print_list_n, $1);}
+                | PrintList ',' PrintItem   {$$ = CN2N(print_list_n, $1, $2);}
                 ;
 
-ExpressionList  : Expression
-                | ExpressionList ',' Expression
+ExpressionList  : Expression                {$$ = CN1N(expression_list_n, $1);}
+                | ExpressionList ',' Expression {$$=CN2N(expression_list_n,$1,$3);}
                 ;
 
-VariableList    : Variable
-                | VariableList ',' Variable
+VariableList    : Variable                  {$$ = CN1N(variable_list_n,$1);}
+                | VariableList ',' Variable {$$ = CN2N(variable_list_n,$1, $3);}
                 ;
 
-DeclarationList : DeclarationList Declaration
-                | /*epsilon*/
+DeclarationList : DeclarationList Declaration{$$ = CN2N(declaration_list_n,$1,$2);}
+                | /*epsilon*/                {$$ = CN0N(declaration_list_n);}
                 ;
 
-ArgumentList    : ExpressionList
-                | /*epsilon*/
+ArgumentList    : ExpressionList            {$$ = CN1N(argument_list_n,$2);}
+                | /*epsilon*/               {$$ = CN0N(argument_list_n);}
+
                 ;
 
-ParameterList   : VariableList
-                | /*epsilon*/
+ParameterList   : VariableList              {$$ = CN1N(parameter_list_n, $1);}
+                | /*epsilon*/               {$$ = CN0N(parameter_list_n);}
                 ;
 
 Function        : FUNC Variable '(' ParameterList ')' Statement
+                                    {$$ = CN3N(function_n,$2,$4,$6);}
                 ;
 
-Statement       : AssignmentStatement
-                | ReturnStatement
-                | IfStatement
-                | WhileStatement
-                | ForStatement
-                | NullStatement
-                | PrintStatement
-                | Block
+Statement       : AssignmentStatement   {$$ = CN1N(statement_n, $1);}
+                | ReturnStatement       {$$ = CN1N(statement_n, $1);}
+                | IfStatement           {$$ = CN1N(statement_n, $1);}
+                | WhileStatement        {$$ = CN1N(statement_n, $1);}
+                | ForStatement          {$$ = CN1N(statement_n, $1);}
+                | NullStatement         {$$ = CN1N(statement_n, $1);}
+                | PrintStatement        {$$ = CN1N(statement_n, $1);}
+                | Block                 {$$ = CN1N(statement_n, $1);}
                 ;
 
 Block           : '{' DeclarationList StatementList '}'
+                                        {$$ = CN2N(block_n, $2,$3);}
                 ;
 
-AssignmentStatement : Variable ASSIGN Expression
+AssignmentStatement : Variable ASSIGN Expression {$$ = CN2N(assignment_statement_n, $1, $3)}
                     ;
 
-ReturnStatement : RETURN Expression
+ReturnStatement : RETURN Expression     {$$ = CN1N(return_statement_n, $2);}
                 ;
 
-PrintStatement  : PRINT PrintList
+PrintStatement  : PRINT PrintList       {$$ = CN1N(print_statement_n, $2);}
                 ;
 
 IfStatement     : IF Expression THEN Statement FI
+                                    {$$ = CN2N(if_statement_n, $2, $4);}
                 | IF Expression THEN Statement ELSE Statement FI
+                                    {$$ = CN3N(if_statement_n, $2, $4, $6);}
                 ;
 
 WhileStatement  : WHILE Expression DO Statement DONE
+                                    {$$ = CN2N(while_statement_n, $2, $4);}
                 ;
 
 ForStatement    : FOR AssignmentStatement TO Expression DO Statement DONE
+                                    {$$ = CN3N(for_statement_n, $2, $4, $6);}
                 ;
 
-NullStatement   : CONTINUE
+NullStatement   : CONTINUE      {$$ = CN0N(null_statement_n);}
                 ;
 
-Expression      : Expression '+' Expression
-                | Expression '-' Expression
-                | Expression '*' Expression
-                | Expression '/' Expression
-                | Expression '<' Expression
-                | Expression '>' Expression
-                | '-' Expression
+Expression      : Expression '+' Expression {$$ = CN2D(expression_n,"+",$1,$3);}
+                | Expression '-' Expression {$$ = CN2D(expression_n,"-",$1,$3);}
+                | Expression '*' Expression {$$ = CN2D(expression_n,"*",$1,$3);}
+                | Expression '/' Expression {$$ = CN2D(expression_n,"/",$1,$3);}
+                | Expression '<' Expression {$$ = CN2D(expression_n,"<",$1,$3);}
+                | Expression '>' Expression {$$ = CN2D(expression_n,">",$1,$3);}
+                | '-' Expression            {$$ = CN1D(expression_n,"-",$2);}
                 | Expression EQUAL Expression
+                                    {$$ = CN2D(expression_n, "==", $1,$3);}
                 | Expression NEQUAL Expression
+                                    {$$ = CN2D(expression_n, "!=", $1,$3);}
                 | Expression LEQUAL Expression
+                                    {$$ = CN2D(expression_n, "<=",$1,$3);}
                 | Expression GEQUAL Expression
-                | '(' Expression ')'
-                | Integer
-                | Variable
-                | Variable '(' ArgumentList ')'
+                                    {$$ = CN2D(expression_n, ">=", $1,$3);}
+                | '(' Expression ')'{$$ = CN1N(expression_n, $1);}
+                | Integer           {$$ = CN1N(expression_n, $1;}
+                | Variable          {$$ = CN1N(expression_n, $1);}
+                | Variable '(' ArgumentList ')' {$$ = CN2N(expression_n, $1, $3);}
                 ;
 
-Declaration     : VAR VariableList
+Declaration     : VAR VariableList      {$$ = CN1N(declaration_n,$2);}
                 ;
 
-Variable        : IDENTIFIER
+Variable        : IDENTIFIER            {$$ = CN0D(variable_n, STRDUP($1));}
                 ;
 
-Integer         : NUMBER
+Integer         : NUMBER                {$$ = CN0D(variable_n,atoi($1));}
                 ;
 
-PrintItem       : Expression
-                | Text
+PrintItem       : Expression            {$$ = CN1N(print_item_n, $1);}
+                | Text                  {$$ = CN1N(print_item_n, $1);}
                 ;
 
-Text            : STRING
+Text            : STRING                {$$ = CN0D(text_n, STRDUP($1));}
                 ;
 
-/*program: '+' {
-    root = node_init ( malloc(sizeof(node_t)), program_n, NULL, 1, $1);}
-    ;*/
 
 %%
 

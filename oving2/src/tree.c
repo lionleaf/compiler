@@ -1,6 +1,6 @@
 #include "tree.h"
-
-
+#include <stdarg.h>
+#define DUMP_TREES
 #ifdef DUMP_TREES
 void
 node_print ( FILE *output, node_t *root, uint32_t nesting )
@@ -28,17 +28,47 @@ node_print ( FILE *output, node_t *root, uint32_t nesting )
 
 
 node_t * node_init ( node_t *nd, nodetype_t type, void *data, uint32_t n_children, ... ) {
-
+    nd -> type = type;
+    nd -> data = data;
+    nd -> n_children = n_children;
+    if(n_children > 0){
+        va_list args;
+        va_start(args, n_children);
+        nd -> children = malloc(sizeof(node_t*) * n_children);
+        for(int i = 0; i < n_children; i++){
+            nd -> children[i] = va_arg(args, node_t*);
+        }
+        va_end(args);
+    }
+    return nd;
 }
 
 
 void node_finalize ( node_t *discard ) {
+    if(!discard) return;
+    //I decided not to depend upon having all fields initialized
+    //even though it might've been easier
+    if(discard->data){
+        free(discard->data);
+    }
+    if(discard->entry){
+        free(discard->entry);
+    }
+    if(discard->children){
+        free(discard->children);
+    }
+    free(discard);
 
 }
 
 
 void destroy_subtree ( node_t *discard ){
-
+    if(!discard) return;
+    int children = discard -> n_children;
+    for(int i = 0; i < children; i++){
+        destroy_subtree(discard->children[i]);
+    }
+    node_finalize(discard);
 }
 
 
