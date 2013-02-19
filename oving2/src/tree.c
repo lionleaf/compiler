@@ -31,6 +31,7 @@ node_t * node_init ( node_t *nd, nodetype_t type, void *data, uint32_t n_childre
     nd -> type = type;
     nd -> data = data;
     nd -> n_children = n_children;
+    nd -> entry = NULL;
     if(n_children > 0){
         va_list args;
         va_start(args, n_children);
@@ -45,7 +46,7 @@ node_t * node_init ( node_t *nd, nodetype_t type, void *data, uint32_t n_childre
 
 
 void node_finalize ( node_t *discard ) {
-    if(!discard) return;
+    /*if(!discard) return;
     //I decided not to depend upon having all fields initialized
     //even though it might've been easier
     if(discard->data){
@@ -57,7 +58,7 @@ void node_finalize ( node_t *discard ) {
     if(discard->children){
         free(discard->children);
     }
-    free(discard);
+    free(discard);*/
 
 }
 
@@ -70,5 +71,3 @@ void destroy_subtree ( node_t *discard ){
     }
     node_finalize(discard);
 }
-
-
