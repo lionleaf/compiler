@@ -193,10 +193,10 @@ Declaration     : VAR VariableList      {$$ = CN1N(declaration_n,$2);}
 Variable        : IDENTIFIER            {$$ = CN0D(variable_n, STRDUP(yytext));}
                 ;
 
-Integer         : NUMBER    {$$ = CN0D(integer_n,malloc(sizeof(int*)));
-                                int* number = malloc(sizeof(int));
+Integer         : NUMBER    {   int* number = malloc(sizeof(int));
                                 *number = atoi(yytext);
-                                $$->data = number;}
+                                $$ = CN0D(integer_n,number);
+                                }
                 ;
 
 PrintItem       : Expression            {$$ = CN1N(print_item_n, $1);}
