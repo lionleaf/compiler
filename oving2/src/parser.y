@@ -165,26 +165,26 @@ ForStatement    : FOR AssignmentStatement TO Expression DO Statement DONE {$$ = 
 NullStatement   : CONTINUE                  {$$ = CN0N(null_statement_n);}
                 ;
 
-Expression      : Expression '+' Expression {$$ = CN2D(expression_n,"+",$1,$3);}
-                | Expression '-' Expression {$$ = CN2D(expression_n,"-",$1,$3);}
-                | Expression '*' Expression {$$ = CN2D(expression_n,"*",$1,$3);}
-                | Expression '/' Expression {$$ = CN2D(expression_n,"/",$1,$3);}
-                | Expression '<' Expression {$$ = CN2D(expression_n,"<",$1,$3);}
-                | Expression '>' Expression {$$ = CN2D(expression_n,">",$1,$3);}
-                | '-' Expression            {$$ = CN1D(expression_n,"-",$2);}
+Expression      : Expression '+' Expression {$$ = CN2D(expression_n,STRDUP("+"),$1,$3);}
+                | Expression '-' Expression {$$ = CN2D(expression_n,STRDUP("-"),$1,$3);}
+                | Expression '*' Expression {$$ = CN2D(expression_n,STRDUP("*"),$1,$3);}
+                | Expression '/' Expression {$$ = CN2D(expression_n,STRDUP("/"),$1,$3);}
+                | Expression '<' Expression {$$ = CN2D(expression_n,STRDUP("<"),$1,$3);}
+                | Expression '>' Expression {$$ = CN2D(expression_n,STRDUP(">"),$1,$3);}
+                | '-' Expression            {$$ = CN1D(expression_n,STRDUP("-"),$2);}
                 | Expression EQUAL Expression
-                                            {$$ = CN2D(expression_n, "==", $1,$3);}
+                                            {$$ = CN2D(expression_n, STRDUP("=="), $1,$3);}
                 | Expression NEQUAL Expression
-                                            {$$ = CN2D(expression_n, "!=", $1,$3);}
+                                            {$$ = CN2D(expression_n, STRDUP("!="), $1,$3);}
                 | Expression LEQUAL Expression
-                                            {$$ = CN2D(expression_n, "<=",$1,$3);}
+                                            {$$ = CN2D(expression_n, STRDUP("<="),$1,$3);}
                 | Expression GEQUAL Expression
-                                            {$$ = CN2D(expression_n, ">=", $1,$3);}
+                                            {$$ = CN2D(expression_n, STRDUP(">="), $1,$3);}
                 | '(' Expression ')'        {$$ = CN1N(expression_n, $2);}
                 | Integer                   {$$ = CN1N(expression_n, $1);}
                 | Variable                  {$$ = CN1N(expression_n, $1);}
                 | Variable '(' ArgumentList ')'
-                                    {$$ = CN2D(expression_n,"F", $1, $3);}
+                                    {$$ = CN2D(expression_n,STRDUP("F"), $1, $3);}
                 ;
 
 Declaration     : VAR VariableList      {$$ = CN1N(declaration_n,$2);}

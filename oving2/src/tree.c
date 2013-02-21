@@ -46,25 +46,16 @@ node_t * node_init ( node_t *nd, nodetype_t type, void *data, uint32_t n_childre
 
 
 void node_finalize ( node_t *discard ) {
-    /*if(!discard) return;
-    //I decided not to depend upon having all fields initialized
-    //even though it might've been easier
-    if(discard->data){
-        free(discard->data);
-    }
-    if(discard->entry){
-        free(discard->entry);
-    }
-    if(discard->children){
-        free(discard->children);
-    }
-    free(discard);*/
+    free(discard->data);  //Could not get the segfault away at the end :(
+    free(discard->entry);
+    free(discard->children);
+    free(discard);
 
 }
 
 
 void destroy_subtree ( node_t *discard ){
-    if(!discard) return;
+    if(!discard) return; //Don't try to free a null node.
     int children = discard -> n_children;
     for(int i = 0; i < children; i++){
         destroy_subtree(discard->children[i]);
