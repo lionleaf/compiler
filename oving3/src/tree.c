@@ -27,8 +27,25 @@ node_print ( FILE *output, node_t *root, uint32_t nesting )
 #endif
 
 
-node_t* simplify_tree ( node_t* node ){
+void copy_node(node_t* to_n, node_t* from_n){
+    to_n->type = from_n->type;
+    to_n->data = from_n->data;
+    to_n->entry = from_n->entry;
+    to_n->n_children = from_n->n_children;
+    to_n->children = from_n->children;
+}
 
+void remove_node(node_t* node){
+    node_t *child = node->children[0];
+    //Copy the child into the parent.
+    copy_node(node, child);
+    //Finalizing the child node now would be a huge mistake
+    //as it would free memory areas now pointed to by node
+    free(child);
+
+}
+
+node_t* simplify_tree ( node_t* node ){
     if ( node != NULL ){
 
         // Recursively simplify the children of the current node
@@ -55,13 +72,32 @@ node_t* simplify_tree ( node_t* node ){
             
             // These have only one child, so they are not needed
             case STATEMENT: case PARAMETER_LIST: case ARGUMENT_LIST:
+                remove_node(node);
                 break;
 
 
             // Expressions where both children are integers can be evaluated (and replaced with
             // integer nodes). Expressions whith just one child can be removed (like statements etc above)
             case EXPRESSION:
+                //Remove expressions with a single child
+                if(node->n_children == 1){
+                    remove_node(node);
+                }
+                //Compile time computations
+                if(node->n_children > 1 &&
+                        node->children[0]->type.index == INTEGER &&
+                        node->children[1]->type.index == INTEGER){
+                    if(strncmp((char*)node->data, "+",100)==0){
+                        node->type = integer_n;
+                        *((int*)node->data) = *((int*)node->children[0]->data) +
+                                        *((int*)node->children[1]->data);
+                        node->n_children = 0;
+                        node_finalize(node->children[0]);
+                        node_finalize(node->children[1]);
+                    }
+                }
                 break;
+        }
 
     }
     return node;
