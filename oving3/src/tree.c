@@ -62,39 +62,7 @@ node_t* simplify_tree ( node_t* node ){
             // These are lists which needs to be flattened. Their structure
             // is the same, so they can be treated the same way.
             case FUNCTION_LIST: case STATEMENT_LIST: case PRINT_LIST:
-            case EXPRESSION_LIST: case VARIABLE_LIST:
-                if(n_children > 1){
-                    //We know that child nr. 1 is the only possible list due to the definition of the language
-                    node_t* child = node->children[0];
-                     uint32_t grandchildren = node->children[0]->n_children;
-                    if(child->type.index == node->type.index){ //Only flatten if the first child is also a list.
-
-                        uint32_t old_n_children = n_children;
-                        node->n_children +=  grandchildren - 1;
-                        n_children = node->n_children;
-
-                        node->children = realloc(node->children,n_children * sizeof(node_t*));
-
-                        //Let's keep the rightmost child to the right
-                        //if(n_children > 1)
-                        node->children[n_children-1] = node->children[old_n_children-1];
-
-                        //Now to fill all the left children with our grandchildren
-                        //We know that the child has been flattened.
-                        for(uint32_t i = 0; i < grandchildren;i++){
-                            node->children[i] = child->children[i];
-                        }
-
-                        node_finalize(child);
-                    }
-
-                }
-                break;
-
-
-            // Declaration lists should also be flattened, but their stucture is sligthly
-            // different, so they need their own case
-            case DECLARATION_LIST:
+            case EXPRESSION_LIST: case VARIABLE_LIST: case DECLARATION_LIST:
                 if(n_children > 0) {
                     //We know that child nr. 1 is the only possible list due to the definition of the language
                     node_t* child = node->children[0];
@@ -119,13 +87,13 @@ node_t* simplify_tree ( node_t* node ){
                             node->children[i] = child->children[i];
                         }
 
-                        //node_finalize(child);
+                        node_finalize(child);
                     }
                 }
 
                 break;
 
-            
+           
             // These have only one child, so they are not needed
             case STATEMENT: case PARAMETER_LIST: case ARGUMENT_LIST:
                 remove_node(node);
