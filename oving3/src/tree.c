@@ -61,18 +61,23 @@ node_t* simplify_tree ( node_t* node ){
         {
             // These are lists which needs to be flattened. Their structure
             // is the same, so they can be treated the same way.
+            // DECLARATION_LIST is not all that different, so we can 
+            // easily use some special cases that takes it into account.
             case FUNCTION_LIST: case STATEMENT_LIST: case PRINT_LIST:
             case EXPRESSION_LIST: case VARIABLE_LIST: case DECLARATION_LIST:
-                if(n_children > 0) {
+                if(n_children > 0) { //If it's a leaf, the ancestors will handle it.
                     //We know that child nr. 1 is the only possible list due to the definition of the language
                     node_t* child = node->children[0];
-                    if(!child || child->type.index == node->type.index){ //Only flatten if the first child is also a list.
-
+                    if(!child || child->type.index == node->type.index){ //Only flatten if the first child is also a list or NULL.
+                        
                         uint32_t old_n_children = n_children;
+                        
+                        //Set grandchild to 0 if child is NULL, if not, fetch it.
                         uint32_t grandchildren = 0;
-                        if(child){ //If the child is NULL, then we let grandchildren be 0
+                        if(child){ 
                             grandchildren = child->n_children;
                         }
+
                         node->n_children += grandchildren - 1;
                         n_children = node->n_children;
                         node->children = realloc(node->children,n_children * sizeof(node_t*));
