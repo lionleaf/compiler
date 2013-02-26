@@ -95,6 +95,34 @@ node_t* simplify_tree ( node_t* node ){
             // Declaration lists should also be flattened, but their stucture is sligthly
             // different, so they need their own case
             case DECLARATION_LIST:
+                if(n_children > 0) {
+                    //We know that child nr. 1 is the only possible list due to the definition of the language
+                    node_t* child = node->children[0];
+                    if(!child || child->type.index == node->type.index){ //Only flatten if the first child is also a list.
+
+                        uint32_t old_n_children = n_children;
+                        uint32_t grandchildren = 0;
+                        if(child){ //If the child is NULL, then we let grandchildren be 0
+                            grandchildren = child->n_children;
+                        }
+                        node->n_children += grandchildren - 1;
+                        n_children = node->n_children;
+                        node->children = realloc(node->children,n_children * sizeof(node_t*));
+
+                        //Let's keep the rightmost child to the right
+                        //if(n_children > 1)
+                        node->children[n_children-1] = node->children[old_n_children-1];
+
+                        //Now to fill all the left children with our grandchildren
+                        //We know that the child has been flattened.
+                        for(uint32_t i = 0; i < grandchildren;i++){
+                            node->children[i] = child->children[i];
+                        }
+
+                        //node_finalize(child);
+                    }
+                }
+
                 break;
 
             
@@ -110,19 +138,24 @@ node_t* simplify_tree ( node_t* node ){
                 //Expressions with a single child are worthless!
                 if(node->n_children == 1){
                     //Fix unary minus
-                    if(node->children[0]->type.index == INTEGER && 
-                            node->data &&
+                    if(node->data &&
                             strncmp((char*)node->data, "-",100)==0){
+                        if(node->children[0]->type.index == INTEGER){//Put in the negative constant instead. 
                         node->type = integer_n;
                         *((int*)node->data) =  -*((int*)node->children[0]->data);
                         node->n_children = 0;
                         node_finalize(node->children[0]);
+                        }else{
+                            //Keep the unary minus if the child is not a constant.
+                        }
                     }else{//If this is not a unary minus, just remove the node.
                         remove_node(node);
                     }
                 }
                 
-                //Compile time computations. (There has to be a better way to do this?!)
+                //Compile time computations. (There has to be a better way to do this?! 
+                //Oh wait, this is C. I could use a function for the meat of the else if, 
+                //but I think it would net about the same amount of code, since I'd have to else if on the op anyway.)
                 if(node->n_children > 1 &&
                         node->children[0]->type.index == INTEGER &&
                         node->children[1]->type.index == INTEGER){
