@@ -47,9 +47,11 @@ void remove_node(node_t* node){
 
 node_t* simplify_tree ( node_t* node ){
     if ( node != NULL ){
+        //Let's store this for easier access.
+        uint32_t n_children = node->n_children;
 
         // Recursively simplify the children of the current node
-        for ( uint32_t i=0; i<node->n_children; i++ ){
+        for ( uint32_t i=0; i<n_children; i++ ){
             node->children[i] = simplify_tree ( node->children[i] );
         }
 
@@ -61,6 +63,32 @@ node_t* simplify_tree ( node_t* node ){
             // is the same, so they can be treated the same way.
             case FUNCTION_LIST: case STATEMENT_LIST: case PRINT_LIST:
             case EXPRESSION_LIST: case VARIABLE_LIST:
+                if(n_children > 1){
+                    //We know that child nr. 1 is the only possible list due to the definition of the language
+                    node_t* child = node->children[0];
+                     uint32_t grandchildren = node->children[0]->n_children;
+                    if(child->type.index == node->type.index){ //Only flatten if the first child is also a list.
+
+                        uint32_t old_n_children = n_children;
+                        node->n_children +=  grandchildren - 1;
+                        n_children = node->n_children;
+
+                        node->children = realloc(node->children,n_children * sizeof(node_t*));
+
+                        //Let's keep the rightmost child to the right
+                        //if(n_children > 1)
+                        node->children[n_children-1] = node->children[old_n_children-1];
+
+                        //Now to fill all the left children with our grandchildren
+                        //We know that the child has been flattened.
+                        for(uint32_t i = 0; i < grandchildren;i++){
+                            node->children[i] = child->children[i];
+                        }
+
+                        node_finalize(child);
+                    }
+
+                }
                 break;
 
 
@@ -79,17 +107,91 @@ node_t* simplify_tree ( node_t* node ){
             // Expressions where both children are integers can be evaluated (and replaced with
             // integer nodes). Expressions whith just one child can be removed (like statements etc above)
             case EXPRESSION:
-                //Remove expressions with a single child
+                //Expressions with a single child are worthless!
                 if(node->n_children == 1){
-                    remove_node(node);
+                    //Fix unary minus
+                    if(node->children[0]->type.index == INTEGER && 
+                            node->data &&
+                            strncmp((char*)node->data, "-",100)==0){
+                        node->type = integer_n;
+                        *((int*)node->data) =  -*((int*)node->children[0]->data);
+                        node->n_children = 0;
+                        node_finalize(node->children[0]);
+                    }else{//If this is not a unary minus, just remove the node.
+                        remove_node(node);
+                    }
                 }
-                //Compile time computations
+                
+                //Compile time computations. (There has to be a better way to do this?!)
                 if(node->n_children > 1 &&
                         node->children[0]->type.index == INTEGER &&
                         node->children[1]->type.index == INTEGER){
                     if(strncmp((char*)node->data, "+",100)==0){
                         node->type = integer_n;
                         *((int*)node->data) = *((int*)node->children[0]->data) +
+                                        *((int*)node->children[1]->data);
+                        node->n_children = 0;
+                        node_finalize(node->children[0]);
+                        node_finalize(node->children[1]);
+                    }else if(strncmp((char*)node->data, "-",100)==0){
+                        node->type = integer_n;
+                        *((int*)node->data) = *((int*)node->children[0]->data) -
+                                        *((int*)node->children[1]->data);
+                        node->n_children = 0;
+                        node_finalize(node->children[0]);
+                        node_finalize(node->children[1]);
+                    }else if(strncmp((char*)node->data, "*",100)==0){
+                        node->type = integer_n;
+                        *((int*)node->data) = *((int*)node->children[0]->data) *
+                                        *((int*)node->children[1]->data);
+                        node->n_children = 0;
+                        node_finalize(node->children[0]);
+                        node_finalize(node->children[1]);
+                    }else if(strncmp((char*)node->data, "/",100)==0){
+                        node->type = integer_n;
+                        *((int*)node->data) = *((int*)node->children[0]->data) /
+                                        *((int*)node->children[1]->data);
+                        node->n_children = 0;
+                        node_finalize(node->children[0]);
+                        node_finalize(node->children[1]);
+                    }else if(strncmp((char*)node->data, "<",100)==0){
+                        node->type = integer_n;
+                        *((int*)node->data) = *((int*)node->children[0]->data) <
+                                        *((int*)node->children[1]->data);
+                        node->n_children = 0;
+                        node_finalize(node->children[0]);
+                        node_finalize(node->children[1]);
+                    }else if(strncmp((char*)node->data, ">",100)==0){
+                        node->type = integer_n;
+                        *((int*)node->data) = *((int*)node->children[0]->data) >
+                                        *((int*)node->children[1]->data);
+                        node->n_children = 0;
+                        node_finalize(node->children[0]);
+                        node_finalize(node->children[1]);
+                    }else if(strncmp((char*)node->data, "==",100)==0){
+                        node->type = integer_n;
+                        *((int*)node->data) = *((int*)node->children[0]->data) ==
+                                        *((int*)node->children[1]->data);
+                        node->n_children = 0;
+                        node_finalize(node->children[0]);
+                        node_finalize(node->children[1]);
+                    }else if(strncmp((char*)node->data, "!=",100)==0){
+                        node->type = integer_n;
+                        *((int*)node->data) = *((int*)node->children[0]->data) !=
+                                        *((int*)node->children[1]->data);
+                        node->n_children = 0;
+                        node_finalize(node->children[0]);
+                        node_finalize(node->children[1]);
+                    }else if(strncmp((char*)node->data, "<=",100)==0){
+                        node->type = integer_n;
+                        *((int*)node->data) = *((int*)node->children[0]->data) <=
+                                        *((int*)node->children[1]->data);
+                        node->n_children = 0;
+                        node_finalize(node->children[0]);
+                        node_finalize(node->children[1]);
+                    }else if(strncmp((char*)node->data, ">=",100)==0){
+                        node->type = integer_n;
+                        *((int*)node->data) = *((int*)node->children[0]->data) >=
                                         *((int*)node->children[1]->data);
                         node->n_children = 0;
                         node_finalize(node->children[0]);
