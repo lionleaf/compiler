@@ -73,14 +73,25 @@ strings_output ( FILE *stream )
 void
 scope_add ( void )
 {
-    //add hash table to stack of tables representing nested scopes.
+    ++scopes_index;
+
+    //expand stack
+    if(scopes_index == scopes_size){
+        scopes_size *= 2;
+        scopes = realloc(scopes, sizeof(hash_t*) * scopes_size);
+    }
+    
+    //Add a new hash table
+    scopes[scopes_index] = ght_create(8);
 }
 
 
+//remove hash table from stack of tables representing nested scopes.
 void
 scope_remove ( void )
 {
-    //remove hash table from stack of tables representing nested scopes.
+    --scopes_index;
+    //TODO:Free stuff? or not?!
 }
 
 
@@ -88,6 +99,16 @@ void
 symbol_insert ( char *key, symbol_t *value )
 {
     //insert symbol to current table
+
+    if(scopes < 0){
+        //Should probably be more descriptive.
+        printf(stderr,"Compile error!");
+        return;
+    }
+
+    hash_t* cur_table = scopes[scopes_index];
+    ght_insert(cur_table, value, strlen(key), key);
+
 
 // Keep this for debugging/testing
 #ifdef DUMP_SYMTAB
