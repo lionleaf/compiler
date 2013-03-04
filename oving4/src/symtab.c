@@ -122,11 +122,20 @@ symbol_t *
 symbol_get ( char *key )
 {
     symbol_t* result = NULL;
-
+    for(int32_t i = scopes_index; i >= 0; i++){
+        hash_t* table_i = scopes[i];
+        result = (symbol_t*) ght_get(table_i,strlen(key), key);
+        if(result != NULL){
+            break;
+        }
+    }
+    
     //resolve symbol entries in the stack
 // Keep this for debugging/testing
 #ifdef DUMP_SYMTAB
     if ( result != NULL )
         fprintf ( stderr, "Retrieving (%s,%d)\n", key, result->stack_offset );
 #endif
+    
+    return result;
 }
