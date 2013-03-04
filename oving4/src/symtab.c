@@ -22,7 +22,11 @@ static int32_t strings_size = 16, strings_index = -1;
 void
 symtab_init ( void )
 {
+    scopes  = malloc(sizeof(hash_t*) * scopes_size);
+    values  = malloc(sizeof(symbol_t*) * values_size);
+    strings = malloc(sizeof(char*) * strings_size);
     //Dynamically allocate 3 tables with an initial size.
+    
 }
 
 
@@ -33,11 +37,21 @@ symtab_finalize ( void )
 }
 
 
+//Add str to a list of strictly growing table of all strings encountered
+//And returns the index of the newly added string.
 int32_t
 strings_add ( char *str )
-{
-    //Add str to a list of strictly growing table of all strings encountered
-    //And returns the index of the newly added string.
+{   
+    ++strings_index;
+
+    //Expand if necessary
+    if(strings_index == strings_size){
+        strings_size *= 2;//Double the size!
+        strings = realloc(strings, sizeof(char*) * strings_size);
+    }
+
+    strings[strings_index] = str;
+    return strings_index;
 }
 
 
@@ -73,6 +87,7 @@ scope_remove ( void )
 void
 symbol_insert ( char *key, symbol_t *value )
 {
+    //insert symbol to current table
 
 // Keep this for debugging/testing
 #ifdef DUMP_SYMTAB
@@ -87,6 +102,7 @@ symbol_get ( char *key )
 {
     symbol_t* result = NULL;
 
+    //resolve symbol entries in the stack
 // Keep this for debugging/testing
 #ifdef DUMP_SYMTAB
     if ( result != NULL )
