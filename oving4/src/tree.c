@@ -67,15 +67,18 @@ destroy_subtree ( node_t *discard )
 }
 
 //recursivly walk a tree looking for VARIABLE nodes
-void
-declare_tree(node_t *node){
+int32_t
+declare_tree(node_t *node, int32_t last_stack_offset){
+    int32_t stack_offset = last_stack_offset;
     if(node->type.index == VARIABLE){
-        declare(node,0);   
+        stack_offset -= 4;
+        declare(node,stack_offset);   
     }
     for(int i = 0; i < node->n_children; i++){
         node_t* child = node->children[i];
-        declare_tree(child); 
+        stack_offset = declare_tree(child, stack_offset); 
     }
+    return stack_offset;
 }
 
 void
@@ -96,12 +99,20 @@ bind_names ( node_t *root )
 
     if(root == NULL) return;
     if(root->type.index == DECLARATION){
-        declare_tree(root);
+        declare_tree(root, 0);
     }else if(root->type.index == BLOCK){
         scope_add();
     }else if(root->type.index == FUNCTION){
         //The first child of a FUNCTION is always a variable.
         declare(root->children[0],0);
+        node_t* parlist = root->children[1];
+        if(parlist != NULL){
+            int32_t offset = 4 + parlist->n_children*4;
+            for(int i = 0; i < parlist->n_children; i++){
+                declare(parlist->children[i], offset);
+                offset -= 4;
+            }
+        }
     }
 
     for(int i = 0; i < root->n_children; i++){
