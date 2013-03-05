@@ -44,6 +44,7 @@ strings_add ( char *str )
 {   
     ++strings_index;
 
+    scopes_size *= 2;
     //Expand if necessary
     if(strings_index == strings_size){
         strings_size *= 2;//Double the size!
@@ -58,6 +59,17 @@ strings_add ( char *str )
 void
 strings_output ( FILE *stream )
 {
+    fprintf(stream, ".data\n");
+    fprintf(stream, ".INTEGER: .string \"\%d \"\n");
+
+    for(int i = 0; i <= strings_index;i++){
+        fprintf(stream, ".STRING%d: .string \"%s\"\n",i, strings[i]);
+    }
+
+
+    fprintf(stream, ".globl main");
+
+
     //dump all strings in the table for a given output stream.
     //Format:
     //.data    //fixed
@@ -81,12 +93,11 @@ scope_add ( void )
         scopes = realloc(scopes, sizeof(hash_t*) * scopes_size);
     }
     
-    //Add a new hash table
     scopes[scopes_index] = ght_create(8);
+    
 }
 
 
-//remove hash table from stack of tables representing nested scopes.
 void
 scope_remove ( void )
 {
@@ -98,16 +109,18 @@ scope_remove ( void )
 void
 symbol_insert ( char *key, symbol_t *value )
 {
-    //insert symbol to current table
+    //TODO: Remove. Temporary fix.
+    if(key == NULL) return;
 
-    if(scopes < 0){
+    if(scopes_index < 0){
         //Should probably be more descriptive.
-        printf(stderr,"Compile error!");
+        printf("Compile error!");
         return;
     }
 
     hash_t* cur_table = scopes[scopes_index];
-    ght_insert(cur_table, value, strlen(key), key);
+    int len = strlen(key);
+    ght_insert(cur_table, value, len, key);
 
 
 // Keep this for debugging/testing
@@ -130,7 +143,6 @@ symbol_get ( char *key )
         }
     }
     
-    //resolve symbol entries in the stack
 // Keep this for debugging/testing
 #ifdef DUMP_SYMTAB
     if ( result != NULL )

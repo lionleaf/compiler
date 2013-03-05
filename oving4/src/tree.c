@@ -3,7 +3,7 @@
 
 
 #ifdef DUMP_TREES
-void
+    void
 node_print ( FILE *output, node_t *root, uint32_t nesting )
 {
     if ( root != NULL )
@@ -28,7 +28,7 @@ node_print ( FILE *output, node_t *root, uint32_t nesting )
 #endif
 
 
-node_t *
+    node_t *
 node_init ( node_t *nd, nodetype_t type, void *data, uint32_t n_children, ... )
 {
     va_list child_list;
@@ -43,7 +43,7 @@ node_init ( node_t *nd, nodetype_t type, void *data, uint32_t n_children, ... )
 }
 
 
-void
+    void
 node_finalize ( node_t *discard )
 {
     if ( discard != NULL )
@@ -55,7 +55,7 @@ node_finalize ( node_t *discard )
 }
 
 
-void
+    void
 destroy_subtree ( node_t *discard )
 {
     if ( discard != NULL )
@@ -65,11 +65,45 @@ destroy_subtree ( node_t *discard )
         node_finalize ( discard );
     }
 }
-
-
-
-
+//recursivly walk a tree looking for VARIABLE nodes
 void
+declare_tree(node_t *node){
+    if(node->type.index == VARIABLE){
+        symbol_t* symbol = malloc(sizeof(symbol_t*));        
+        symbol_t temp; 
+        temp.label = (char*)node->data;
+        temp.depth = strlen(temp.label);
+        symbol = &temp;
+        symbol_insert(temp.label, symbol);
+
+    }
+    for(int i = 0; i < node->n_children; i++){
+        node_t* child = node->children[i];
+        declare_tree(child); 
+    }
+}
+
+
+    void
 bind_names ( node_t *root )
 {
+
+    if(root == NULL) return;
+    if(root->type.index == DECLARATION){
+        declare_tree(root);
+        /*for(int i = 0; i < root->n_children; i++){
+            node_t* child = root->children[i];
+                    }*/
+    }else if(root->type.index == BLOCK){
+        scope_add();
+    }
+
+    for(int i = 0; i < root->n_children; i++){
+        node_t* child = root->children[i];
+        bind_names(child); 
+    }
+
+    if(root->type.index == BLOCK){
+        scope_remove();
+    }
 }
