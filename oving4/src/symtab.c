@@ -25,8 +25,9 @@ symtab_init ( void )
     scopes  = malloc(sizeof(hash_t*) * scopes_size);
     values  = malloc(sizeof(symbol_t*) * values_size);
     strings = malloc(sizeof(char*) * strings_size);
-    //Dynamically allocate 3 tables with an initial size.
     
+    //We need a scope for global stuff
+    scope_add();
 }
 
 

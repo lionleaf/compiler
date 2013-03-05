@@ -65,22 +65,28 @@ destroy_subtree ( node_t *discard )
         node_finalize ( discard );
     }
 }
+
 //recursivly walk a tree looking for VARIABLE nodes
 void
 declare_tree(node_t *node){
     if(node->type.index == VARIABLE){
-        symbol_t* symbol = malloc(sizeof(symbol_t*));        
-        symbol_t temp; 
-        temp.label = (char*)node->data;
-        temp.depth = strlen(temp.label);
-        symbol = &temp;
-        symbol_insert(temp.label, symbol);
-
+        declare(node,0);   
     }
     for(int i = 0; i < node->n_children; i++){
         node_t* child = node->children[i];
         declare_tree(child); 
     }
+}
+
+void
+declare(node_t* node, int32_t offset){
+
+    symbol_t symbol; 
+    symbol.label = (char*)node->data;
+    symbol.depth = strlen(symbol.label);
+    symbol.stack_offset = offset;
+
+    symbol_insert(symbol.label, &symbol);
 }
 
 
@@ -91,11 +97,11 @@ bind_names ( node_t *root )
     if(root == NULL) return;
     if(root->type.index == DECLARATION){
         declare_tree(root);
-        /*for(int i = 0; i < root->n_children; i++){
-            node_t* child = root->children[i];
-                    }*/
     }else if(root->type.index == BLOCK){
         scope_add();
+    }else if(root->type.index == FUNCTION){
+        //The first child of a FUNCTION is always a variable.
+        declare(root->children[0],0);
     }
 
     for(int i = 0; i < root->n_children; i++){
