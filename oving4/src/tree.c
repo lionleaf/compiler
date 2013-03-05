@@ -92,6 +92,27 @@ declare(node_t* node, int32_t offset){
     symbol_insert(symbol.label, &symbol);
 }
 
+void
+define_function(node_t* node){
+    //Check whether it has been declared
+    char* key = (char*) node->children[0]->data;
+    symbol_t* earlier_declaration = symbol_get(key);
+    if(earlier_declaration == NULL){
+        //Function not seen before.
+
+        //The first child of a FUNCTION is always a variable.
+        declare(node->children[0],0);
+        node_t* parlist = node->children[1];
+        if(parlist != NULL){
+            int32_t offset = 4 + parlist->n_children*4;
+            for(int i = 0; i < parlist->n_children; i++){
+                declare(parlist->children[i], offset);
+                offset -= 4;
+            }
+        }
+    }
+}
+
 
     void
 bind_names ( node_t *root )
@@ -103,16 +124,11 @@ bind_names ( node_t *root )
     }else if(root->type.index == BLOCK){
         scope_add();
     }else if(root->type.index == FUNCTION){
-        //The first child of a FUNCTION is always a variable.
-        declare(root->children[0],0);
-        node_t* parlist = root->children[1];
-        if(parlist != NULL){
-            int32_t offset = 4 + parlist->n_children*4;
-            for(int i = 0; i < parlist->n_children; i++){
-                declare(parlist->children[i], offset);
-                offset -= 4;
-            }
-        }
+        define_function(root);
+    }else if(root->type.index == EXPRESSION  //Function call
+            && root->data!= NULL 
+            && strncmp((char*)root->data, "F",100)==0){
+        define_function(root);
     }
 
     for(int i = 0; i < root->n_children; i++){

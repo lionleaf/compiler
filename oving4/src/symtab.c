@@ -136,7 +136,7 @@ symbol_t *
 symbol_get ( char *key )
 {
     symbol_t* result = NULL;
-    for(int32_t i = scopes_index; i >= 0; i++){
+    for(int32_t i = scopes_index; i >= 0; i--){
         hash_t* table_i = scopes[i];
         result = (symbol_t*) ght_get(table_i,strlen(key), key);
         if(result != NULL){
