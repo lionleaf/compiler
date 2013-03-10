@@ -1,4 +1,4 @@
- PROGRAM
+PROGRAM
  FUNCTION_LIST
   FUNCTION
    VARIABLE("fibonacci_recursive")

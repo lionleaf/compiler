@@ -83,60 +83,75 @@ declare_tree(node_t *node, int32_t last_stack_offset){
 
 void
 declare(node_t* node, int32_t offset){
-
-    symbol_t symbol; 
-    symbol.label = (char*)node->data;
-    symbol.depth = strlen(symbol.label);
-    symbol.stack_offset = offset;
-
-    symbol_insert(symbol.label, &symbol);
+    symbol_t* symbol = malloc(sizeof(symbol_t));
+    symbol->label = (char*)node->data;
+    
+    symbol->stack_offset = offset;
+    symbol_insert(symbol->label, symbol);
 }
 
 void
-define_function(node_t* node){
-    //Check whether it has been declared
-    char* key = (char*) node->children[0]->data;
-    symbol_t* earlier_declaration = symbol_get(key);
-    if(earlier_declaration == NULL){
-        //Function not seen before.
+bind_variable(node_t* node){
+    symbol_t* symbol = symbol_get((char*)node->data);
+    node->entry = symbol;
+}
 
-        //The first child of a FUNCTION is always a variable.
-        declare(node->children[0],0);
-        node_t* parlist = node->children[1];
-        if(parlist != NULL){
-            int32_t offset = 4 + parlist->n_children*4;
-            for(int i = 0; i < parlist->n_children; i++){
-                declare(parlist->children[i], offset);
-                offset -= 4;
-            }
+void
+define_parameters(node_t* node){
+    node_t* parlist = node->children[1];
+    if(parlist != NULL){
+        int32_t offset = 4 + parlist->n_children*4;
+        for(int i = 0; i < parlist->n_children; i++){
+            declare(parlist->children[i], offset);
+            offset -= 4;
         }
     }
+
 }
 
 
-    void
-bind_names ( node_t *root )
-{
-
-    if(root == NULL) return;
+void 
+recurse_tree(node_t* root){
+if(root == NULL) return;
     if(root->type.index == DECLARATION){
         declare_tree(root, 0);
     }else if(root->type.index == BLOCK){
         scope_add();
     }else if(root->type.index == FUNCTION){
-        define_function(root);
-    }else if(root->type.index == EXPRESSION  //Function call
-            && root->data!= NULL 
-            && strncmp((char*)root->data, "F",100)==0){
-        define_function(root);
+        //function should've been defined already, but not the parameters.
+        define_parameters(root);
+    }else if(root->type.index == EXPRESSION  //Expression but not function
+            ){//&& strncmp((char*)root->data, "F",100)!=0){
+        for(int i = 0; i< root->n_children;i++){
+            if(root->children[i]->type.index == VARIABLE){
+                bind_variable(root->children[i]);
+            }
+        }
     }
 
     for(int i = 0; i < root->n_children; i++){
         node_t* child = root->children[i];
-        bind_names(child); 
+        recurse_tree(child); 
     }
 
     if(root->type.index == BLOCK){
         scope_remove();
     }
+}
+void
+bind_functions(node_t* node){
+    //The only possible child.
+    node_t* functionlist = node->children[0];
+    for(int i = 0;i < functionlist->n_children; i++){
+        node_t* function = functionlist->children[i];
+        declare(function->children[0],0);
+    }
+}
+
+    void
+bind_names ( node_t *root )
+{
+    bind_functions(root);
+    recurse_tree(root);
+    
 }

@@ -111,7 +111,7 @@ void
 symbol_insert ( char *key, symbol_t *value )
 {
     //TODO: Remove. Temporary fix.
-    if(key == NULL) return;
+    //if(key == NULL) return;
 
     if(scopes_index < 0){
         //Should probably be more descriptive.
@@ -122,8 +122,7 @@ symbol_insert ( char *key, symbol_t *value )
     hash_t* cur_table = scopes[scopes_index];
     int len = strlen(key);
     ght_insert(cur_table, value, len, key);
-
-
+    
 // Keep this for debugging/testing
 #ifdef DUMP_SYMTAB
 fprintf ( stderr, "Inserting (%s,%d)\n", key, value->stack_offset );
@@ -136,6 +135,7 @@ symbol_t *
 symbol_get ( char *key )
 {
     symbol_t* result = NULL;
+    //Check all scopes. Start with the current one, and move "away".
     for(int32_t i = scopes_index; i >= 0; i--){
         hash_t* table_i = scopes[i];
         result = (symbol_t*) ght_get(table_i,strlen(key), key);
@@ -147,7 +147,7 @@ symbol_get ( char *key )
 // Keep this for debugging/testing
 #ifdef DUMP_SYMTAB
     if ( result != NULL )
-        fprintf ( stderr, "Retrieving (%s,%d)\n", key, result->stack_offset );
+        fprintf ( stderr, "Retrieving (%s,%d)\n", key, result->stack_offset);
 #endif
     
     return result;
