@@ -34,7 +34,7 @@ symtab_init ( void )
 void
 symtab_finalize ( void )
 {
-    //Remove both tables and their contents
+    //Remove both tables and their content
 }
 
 
@@ -44,8 +44,6 @@ int32_t
 strings_add ( char *str )
 {   
     ++strings_index;
-
-    scopes_size *= 2;
     //Expand if necessary
     if(strings_index == strings_size){
         strings_size *= 2;//Double the size!
@@ -61,25 +59,14 @@ void
 strings_output ( FILE *stream )
 {
     fprintf(stream, ".data\n");
-    fprintf(stream, ".INTEGER: .string \"\%d \"\n");
+    fprintf(stream, ".INTEGER: .string \"\%%d \"\n");
 
     for(int i = 0; i <= strings_index;i++){
-        fprintf(stream, ".STRING%d: .string \"%s\"\n",i, strings[i]);
+        fprintf(stream, ".STRING%d: .string %s\n",i, strings[i]);
     }
 
 
-    fprintf(stream, ".globl main");
-
-
-    //dump all strings in the table for a given output stream.
-    //Format:
-    //.data    //fixed
-    //.INTEGER: .string "%d "
-    //.STRING0: .string "Hello, world!"
-    //.STRING1: .string "Some other thing.."
-    //.STRING<index>: .string <the text>
-    //(etc.)
-    //.globl main  //fixed
+    fprintf(stream, ".globl main\n");
 }
 
 
@@ -110,18 +97,29 @@ scope_remove ( void )
 void
 symbol_insert ( char *key, symbol_t *value )
 {
-    //TODO: Remove. Temporary fix.
-    //if(key == NULL) return;
+    //NOTE: I assume that the input is well-defined.
+    //And that a crash here would simply indicate a compile error.
+    //So there is no checks for whether value == NULL etc.
 
-    if(scopes_index < 0){
-        //Should probably be more descriptive.
-        printf("Compile error!");
-        return;
-    }
+
+    //Depth of the functions will be set to 0 anyway,
+    //so we can set it for every symbol!
+    value->depth = scopes_index;
 
     hash_t* cur_table = scopes[scopes_index];
     int len = strlen(key);
     ght_insert(cur_table, value, len, key);
+
+
+    //Time to add the symbol to the symbol array
+    ++values_index;
+    //Expand if necessary
+    if(values_index == values_size){
+        values_size *= 2;//Double the size!
+        values = realloc(values, sizeof(symbol_t*) * values_size);
+    }
+
+    values[values_index] = value;
     
 // Keep this for debugging/testing
 #ifdef DUMP_SYMTAB

@@ -1,7 +1,7 @@
 #include "tree.h"
 #include "symtab.h"
 
-
+int32_t next_stack_offset = -4;
 #ifdef DUMP_TREES
     void
 node_print ( FILE *output, node_t *root, uint32_t nesting )
@@ -67,18 +67,17 @@ destroy_subtree ( node_t *discard )
 }
 
 //recursivly walk a tree looking for VARIABLE nodes
+//TODO: Do this more elegantly!
 int32_t
-declare_tree(node_t *node, int32_t last_stack_offset){
-    int32_t stack_offset = last_stack_offset;
+declare_tree(node_t *node){
     if(node->type.index == VARIABLE){
-        stack_offset -= 4;
-        declare(node,stack_offset);   
+        declare(node,next_stack_offset);   
+        next_stack_offset -= 4;
     }
     for(int i = 0; i < node->n_children; i++){
         node_t* child = node->children[i];
-        stack_offset = declare_tree(child, stack_offset); 
+        declare_tree(child); 
     }
-    return stack_offset;
 }
 
 void
@@ -109,24 +108,35 @@ define_parameters(node_t* node){
 
 }
 
+void
+add_text(node_t* node){
+    char* text = (char*) node->data;
+    strings_add(text); 
+}
 
 void 
 recurse_tree(node_t* root){
 if(root == NULL) return;
     if(root->type.index == DECLARATION){
-        declare_tree(root, 0);
+        declare_tree(root);
     }else if(root->type.index == BLOCK){
+        next_stack_offset = -4; //TODO:Do something cooler?
         scope_add();
     }else if(root->type.index == FUNCTION){
+        next_stack_offset = -4;
+        scope_add();
         //function should've been defined already, but not the parameters.
         define_parameters(root);
-    }else if(root->type.index == EXPRESSION  //Expression but not function
-            ){//&& strncmp((char*)root->data, "F",100)!=0){
+    }else if(root->type.index == EXPRESSION
+          || root->type.index == ASSIGNMENT_STATEMENT){
         for(int i = 0; i< root->n_children;i++){
+            if(root->children[i] == NULL) continue;
             if(root->children[i]->type.index == VARIABLE){
                 bind_variable(root->children[i]);
             }
         }
+    }else if(root->type.index == TEXT){
+        add_text(root);
     }
 
     for(int i = 0; i < root->n_children; i++){
@@ -134,7 +144,8 @@ if(root == NULL) return;
         recurse_tree(child); 
     }
 
-    if(root->type.index == BLOCK){
+    if(root->type.index == BLOCK
+    || root->type.index == FUNCTION){
         scope_remove();
     }
 }
