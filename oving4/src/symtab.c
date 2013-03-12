@@ -33,8 +33,19 @@ symtab_init ( void )
 
 void
 symtab_finalize ( void )
-{
-    //Remove both tables and their content
+{   
+    for(int i = 0; i <= values_index; i++){
+        if(values[i]->label != NULL){
+            free(values[i]->label);
+        }
+        free(values[i]);
+    }
+    //TODO: This is probably not needed.
+    while(scopes_index >= 0){
+        scope_remove(); //In case there are additional scopes
+    }
+    
+    free(scopes);
 }
 
 
@@ -89,8 +100,10 @@ scope_add ( void )
 void
 scope_remove ( void )
 {
+    free(scopes[scopes_index]);
+    //The values in the hashmap are all stored in values and freed later.
+
     --scopes_index;
-    //TODO:Free stuff? or not?!
 }
 
 
