@@ -41,10 +41,17 @@ symtab_finalize ( void )
         }
         free(values[i]);
     }
-    
+
+    for(int i = 0; i <= strings_index; i++){
+        free(strings[i]);
+    }
+
     free(scopes);
     free(values);
     free(strings);
+
+
+    //SUCCESS, valgrind reports 0 leaks :D
 }
 
 

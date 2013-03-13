@@ -1,6 +1,13 @@
 #include "tree.h"
 #include "symtab.h"
 
+//To avoid having to hand in the .h file, I'll declare my functions here
+void declare(node_t* node, int32_t offset, char function);
+void declare_functions(node_t* node);
+void recurse_tree(node_t* node);
+int32_t declare_tree(node_t* node);
+void define_parameters(node_t* node);
+void bind_variable(node_t* node);
 
 int32_t next_stack_offset = -4;
 
@@ -68,51 +75,27 @@ destroy_subtree ( node_t *discard )
     }
 }
 
-//Recursivly walk a tree looking for VARIABLE nodes
-int32_t
-declare_tree(node_t *node){
-    if(node->type.index == VARIABLE){
-        declare(node,next_stack_offset);   
-        next_stack_offset -= 4;
-    }
-    for(int i = 0; i < node->n_children; i++){
-        node_t* child = node->children[i];
-        declare_tree(child); 
-    }
-}
-
 void
-declare(node_t* node, int32_t offset){
-    symbol_t* symbol = malloc(sizeof(symbol_t));
-    symbol->label = (char*)node->data;
+bind_names ( node_t *root )
+{
+    //Initial scope for the functions
+    scope_add();
+
+    declare_functions(root);
+    recurse_tree(root);
     
-    symbol->stack_offset = offset;
-    symbol_insert(symbol->label, symbol);
+    //Remove the function scope
+    scope_remove();
 }
 
 void
-bind_variable(node_t* node){
-    symbol_t* symbol = symbol_get((char*)node->data);
-    node->entry = symbol;
-}
-
-void
-define_parameters(node_t* node){
-    node_t* parlist = node->children[1];
-    if(parlist != NULL){
-        int32_t offset = 4 + parlist->n_children*4;
-        for(int i = 0; i < parlist->n_children; i++){
-            declare(parlist->children[i], offset);
-            offset -= 4;
-        }
+declare_functions(node_t* node){
+    //The only possible child.
+    node_t* functionlist = node->children[0];
+    for(int i = 0;i < functionlist->n_children; i++){
+        node_t* function = functionlist->children[i];
+        declare(function->children[0],0,TRUE);
     }
-
-}
-
-void
-add_text(node_t* node){
-    char* text = (char*) node->data;
-    strings_add(text); 
 }
 
 void 
@@ -133,11 +116,19 @@ if(root == NULL) return;
         for(int i = 0; i< root->n_children;i++){
             if(root->children[i] == NULL) continue;
             if(root->children[i]->type.index == VARIABLE){
-                bind_variable(root->children[i]);
+                symbol_t* symbol = symbol_get((char*)root->data);
+                root->entry = symbol;
             }
         }
     }else if(root->type.index == TEXT){
-        add_text(root);
+        char* text = (char*) root->data;
+
+        //For future ease of use, I will not store 
+        //the index directly in the pointer.
+        int32_t* intpoint = malloc(sizeof(int32_t));
+        *intpoint = strings_add(text); 
+        //Store the string index instead of the string
+        root->data = intpoint;
     }
 
     for(int i = 0; i < root->n_children; i++){
@@ -150,25 +141,44 @@ if(root == NULL) return;
         scope_remove();
     }
 }
-void
-bind_functions(node_t* node){
-    //The only possible child.
-    node_t* functionlist = node->children[0];
-    for(int i = 0;i < functionlist->n_children; i++){
-        node_t* function = functionlist->children[i];
-        declare(function->children[0],0);
+
+//Recursivly walk a tree looking for VARIABLE nodes
+int32_t
+declare_tree(node_t *node){
+    if(node->type.index == VARIABLE){
+        declare(node,next_stack_offset, FALSE);   
+        next_stack_offset -= 4;
+    }
+    for(int i = 0; i < node->n_children; i++){
+        node_t* child = node->children[i];
+        declare_tree(child); 
     }
 }
 
-    void
-bind_names ( node_t *root )
-{
-    //Initial scope for the functions
-    scope_add();
+void
+declare(node_t* node, int32_t offset, char function){
+    symbol_t* symbol = malloc(sizeof(symbol_t));
+    char* key = (char*)node->data;
 
-    bind_functions(root);
-    recurse_tree(root);
+    //"Variables don't need labels"
+    if(function){
+        symbol->label = key;
+    }
     
-    //Remove the function scope
-    scope_remove();
+    symbol->stack_offset = offset;
+    symbol_insert(key, symbol);
 }
+
+void
+define_parameters(node_t* node){
+    node_t* parlist = node->children[1];
+    if(parlist != NULL){
+        int32_t offset = 4 + parlist->n_children*4;
+        for(int i = 0; i < parlist->n_children; i++){
+            declare(parlist->children[i], offset, FALSE);
+            offset -= 4;
+        }
+    }
+
+}
+
