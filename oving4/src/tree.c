@@ -1,7 +1,9 @@
 #include "tree.h"
 #include "symtab.h"
 
+
 int32_t next_stack_offset = -4;
+
 #ifdef DUMP_TREES
     void
 node_print ( FILE *output, node_t *root, uint32_t nesting )
@@ -66,8 +68,7 @@ destroy_subtree ( node_t *discard )
     }
 }
 
-//recursivly walk a tree looking for VARIABLE nodes
-//TODO: Do this more elegantly!
+//Recursivly walk a tree looking for VARIABLE nodes
 int32_t
 declare_tree(node_t *node){
     if(node->type.index == VARIABLE){
@@ -162,7 +163,12 @@ bind_functions(node_t* node){
     void
 bind_names ( node_t *root )
 {
+    //Initial scope for the functions
+    scope_add();
+
     bind_functions(root);
     recurse_tree(root);
     
+    //Remove the function scope
+    scope_remove();
 }

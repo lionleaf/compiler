@@ -25,32 +25,29 @@ symtab_init ( void )
     scopes  = malloc(sizeof(hash_t*) * scopes_size);
     values  = malloc(sizeof(symbol_t*) * values_size);
     strings = malloc(sizeof(char*) * strings_size);
-    
-    //We need a scope for global stuff
-    scope_add();
 }
 
 
 void
 symtab_finalize ( void )
 {   
+    //Lexer buffers are not destroyed elsewhere,
+    //and it annoys me when valgrind reports the leak :P
+    yylex_destroy();
+
     for(int i = 0; i <= values_index; i++){
         if(values[i]->label != NULL){
             free(values[i]->label);
         }
         free(values[i]);
     }
-    //TODO: This is probably not needed.
-    while(scopes_index >= 0){
-        scope_remove(); //In case there are additional scopes
-    }
     
     free(scopes);
+    free(values);
+    free(strings);
 }
 
 
-//Add str to a list of strictly growing table of all strings encountered
-//And returns the index of the newly added string.
 int32_t
 strings_add ( char *str )
 {   
@@ -76,7 +73,6 @@ strings_output ( FILE *stream )
         fprintf(stream, ".STRING%d: .string %s\n",i, strings[i]);
     }
 
-
     fprintf(stream, ".globl main\n");
 }
 
@@ -85,8 +81,8 @@ void
 scope_add ( void )
 {
     ++scopes_index;
-
-    //expand stack
+    
+    //Expand if it's full
     if(scopes_index == scopes_size){
         scopes_size *= 2;
         scopes = realloc(scopes, sizeof(hash_t*) * scopes_size);
@@ -100,9 +96,7 @@ scope_add ( void )
 void
 scope_remove ( void )
 {
-    free(scopes[scopes_index]);
-    //The values in the hashmap are all stored in values and freed later.
-
+    ght_finalize(scopes[scopes_index]);
     --scopes_index;
 }
 
@@ -113,7 +107,6 @@ symbol_insert ( char *key, symbol_t *value )
     //NOTE: I assume that the input is well-defined.
     //And that a crash here would simply indicate a compile error.
     //So there is no checks for whether value == NULL etc.
-
 
     //Depth of the functions will be set to 0 anyway,
     //so we can set it for every symbol!
