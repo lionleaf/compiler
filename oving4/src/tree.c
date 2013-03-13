@@ -104,19 +104,20 @@ if(root == NULL) return;
     if(root->type.index == DECLARATION){
         declare_tree(root);
     }else if(root->type.index == BLOCK){
-        next_stack_offset = -4; //TODO:Do something cooler?
+        next_stack_offset = -4; 
         scope_add();
     }else if(root->type.index == FUNCTION){
         next_stack_offset = -4;
         scope_add();
-        //function should've been defined already, but not the parameters.
+        //function is defined already, but not the parameters.
         define_parameters(root);
     }else if(root->type.index == EXPRESSION
           || root->type.index == ASSIGNMENT_STATEMENT){
         for(int i = 0; i< root->n_children;i++){
-            if(root->children[i] == NULL) continue;
-            if(root->children[i]->type.index == VARIABLE){
-                symbol_t* symbol = symbol_get((char*)root->data);
+            node_t* child = root->children[i];
+            if(child == NULL) continue;
+            if(child->type.index == VARIABLE){
+                symbol_t* symbol = symbol_get((char*)child->data);
                 root->entry = symbol;
             }
         }
