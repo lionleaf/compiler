@@ -113,7 +113,7 @@ void generate ( FILE *stream, node_t *root )
 
         case FUNCTION:
             //First child of a function is a variable with it's name.
-            funcname =  root->children[0]->data;
+            funcname =  root->children[0]->entry->label;
             //Add label.
             instruction_add(LABEL, STRDUP(funcname),NULL,0,0);
 
@@ -146,7 +146,6 @@ void generate ( FILE *stream, node_t *root )
              * Blocks:
              * Set up/take down activation record, no return value
              */
-
             RECUR();
             break;
 
@@ -163,7 +162,7 @@ void generate ( FILE *stream, node_t *root )
              * Print lists:
              * Emit the list of print items, followed by newline (0x0A)
              */
-
+            RECUR();
             break;
 
         case PRINT_ITEM:
@@ -171,8 +170,14 @@ void generate ( FILE *stream, node_t *root )
              * Items in print lists:
              * Determine what kind of value (string literal or expression)
              * and set up a suitable call to printf
-             */
+             *
 
+            node_t* child = root->children[0];
+            if(child->type.index == TEXT){
+               symbol_t* entry = child->entry;
+                
+
+            }*/
             break;
 
         case EXPRESSION:
