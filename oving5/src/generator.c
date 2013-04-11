@@ -105,6 +105,9 @@ void generate ( FILE *stream, node_t *root )
 
             /* TODO: Insert a call to the first defined function here */
 
+            //program->function_list->function->variable
+            char* first_func = root->children[0]->children[0]->children[0]->entry->label;
+            instruction_add(CALL, STRDUP(first_func), NULL,0,0);
             TEXT_TAIL();
 
             instructions_print ( stream );
@@ -179,7 +182,7 @@ void generate ( FILE *stream, node_t *root )
                //This buffer limits the number of strings in the program
                //TODO: Use logarithm to determine required size dynamically.
                char buffer[12];
-               sprintf(buffer,"$STRING%d",string_nr);
+               sprintf(buffer,"$.STRING%d",string_nr);
                instruction_add(PUSH, STRDUP(buffer),NULL, 0, 0 );
                instruction_add(SYSCALL, STRDUP("printf"), NULL, 0, 0);
             
