@@ -185,8 +185,6 @@ void generate ( FILE *stream, node_t *root )
                sprintf(buffer,"$.STRING%d",string_nr);
                instruction_add(PUSH, STRDUP(buffer),NULL, 0, 0 );
                instruction_add(SYSCALL, STRDUP("printf"), NULL, 0, 0);
-            
-
             }
             break;
 
