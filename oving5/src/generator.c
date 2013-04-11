@@ -170,14 +170,21 @@ void generate ( FILE *stream, node_t *root )
              * Items in print lists:
              * Determine what kind of value (string literal or expression)
              * and set up a suitable call to printf
-             *
+             **/
 
-            node_t* child = root->children[0];
-            if(child->type.index == TEXT){
-               symbol_t* entry = child->entry;
-                
+            if(root->children[0]->type.index == TEXT){
+               int32_t string_nr =*((int32_t*)root->children[0]->data);
+               //push string on stack
 
-            }*/
+               //This buffer limits the number of strings in the program
+               //TODO: Use logarithm to determine required size dynamically.
+               char buffer[12];
+               sprintf(buffer,"$STRING%d",string_nr);
+               instruction_add(PUSH, STRDUP(buffer),NULL, 0, 0 );
+               instruction_add(SYSCALL, STRDUP("printf"), NULL, 0, 0);
+            
+
+            }
             break;
 
         case EXPRESSION:
