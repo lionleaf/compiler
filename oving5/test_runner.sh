@@ -8,7 +8,7 @@ for inputFile in `ls vsl_programs/*.vsl`; do
 	./bin/vslc < $inputFile > testOutput/$inputFileBase.s
 	gcc -m32 testOutput/$inputFileBase.s -o testOutput/$inputFileBase.out
 	./testOutput/$inputFileBase.out > testOutput/$inputFileBase.result
-	diff vsl_programs/$inputFileBase.output testOutput/$inputFileBase.result > testOutput/$inputFileBase.diff
+	diff -b vsl_programs/$inputFileBase.output testOutput/$inputFileBase.result > testOutput/$inputFileBase.diff
 	if [ ! -s "testOutput/$inputFileBase.diff" ]; then
 		echo -e "\e[00;32mCorrect\e[00m"
 		#rm testOutput/$inputFileBase.*
