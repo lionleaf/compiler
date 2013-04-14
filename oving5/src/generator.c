@@ -180,9 +180,6 @@ void generate ( FILE *stream, node_t *root )
             //TODO: Use logarithm to determine required size dynamically.
             sprintf(buffer,"$%d",n_variables*4);
             instruction_add(ADD, STRDUP(buffer),esp, 0,0);
-
-            //TODO:Remove RECUR??
-            RECUR();
             break;
 
         case PRINT_LIST:
