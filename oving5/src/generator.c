@@ -94,7 +94,14 @@ void generate ( FILE *stream, node_t *root )
         return;
 
     switch ( root->type.index )
-    {
+    {   
+        int32_t n_variables;
+        int32_t string_nr; 
+        node_t* var_list;
+        //Buffer used for representing numbers and the like
+        //TODO: Check implications of the size of it.
+        char buffer[12];
+
         case PROGRAM:
             /* Output the data segment */
             strings_output ( stream );
@@ -149,7 +156,19 @@ void generate ( FILE *stream, node_t *root )
              * Blocks:
              * Set up/take down activation record, no return value
              */
+            //Push EBP
+            instruction_add ( PUSH, ebp, NULL, 0, 0 );
+            
+            //Set EBP to top of stack.
+            instruction_add ( MOVE, esp, ebp, 0, 0 );
+            
+            //Fill in the block
             RECUR();
+            
+            //Restore EBP
+            instruction_add ( POP, ebp, NULL, 0, 0 );
+            
+            //TODO: Should I set the ESP to the EBP first? Nah
             break;
 
         case DECLARATION:
@@ -157,7 +176,15 @@ void generate ( FILE *stream, node_t *root )
              * Declarations:
              * Add space on local stack
              */
+            var_list = root->children[0];
+            n_variables = var_list->n_children;
+            //This buffer limits the number variables in a scope
+            //TODO: Use logarithm to determine required size dynamically.
+            sprintf(buffer,"$%d",n_variables);
+            instruction_add(ADD, STRDUP(buffer),esp, 0,0);
 
+            //TODO:Remove RECUR??
+            RECUR();
             break;
 
         case PRINT_LIST:
@@ -174,17 +201,19 @@ void generate ( FILE *stream, node_t *root )
              * Determine what kind of value (string literal or expression)
              * and set up a suitable call to printf
              **/
+            switch(root->children[0]->type.index){
+                case TEXT:
+                    string_nr =*((int32_t*)root->children[0]->data);
+                    //push string on stack
 
-            if(root->children[0]->type.index == TEXT){
-               int32_t string_nr =*((int32_t*)root->children[0]->data);
-               //push string on stack
-
-               //This buffer limits the number of strings in the program
-               //TODO: Use logarithm to determine required size dynamically.
-               char buffer[12];
-               sprintf(buffer,"$.STRING%d",string_nr);
-               instruction_add(PUSH, STRDUP(buffer),NULL, 0, 0 );
-               instruction_add(SYSCALL, STRDUP("printf"), NULL, 0, 0);
+                    //This buffer limits the number of strings in the program
+                    //TODO: Use logarithm to determine required size dynamically.
+                    sprintf(buffer,"$.STRING%d",string_nr);
+                    instruction_add(PUSH, STRDUP(buffer),NULL, 0, 0 );
+                    instruction_add(SYSCALL, STRDUP("printf"), NULL, 0, 0);
+                    break;
+                case VARIABLE:
+                    break;
             }
             break;
 
