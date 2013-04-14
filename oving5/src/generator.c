@@ -203,7 +203,7 @@ void generate ( FILE *stream, node_t *root )
                     instruction_add(SYSCALL, STRDUP("printf"), NULL, 0, 0);
                     break;
                 case VARIABLE:
-                    instruction_add(PUSH, esp, NULL, root->children[0]->entry->stack_offset, 0);
+                    generate(stream,root->children[0]);
                     instruction_add(PUSH, STRDUP("$.INTEGER"), NULL, 0, 0);
                     instruction_add(SYSCALL, STRDUP("printf"), NULL, 0, 0);
                     break;
