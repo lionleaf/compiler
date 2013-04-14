@@ -1,0 +1,12 @@
+
+// This program tests activation records, function call and return
+
+FUNC funcall ()
+{
+    VAR x,y,z
+    x := 5
+    y := 10
+    PRINT "Here are some numbers ", x, y
+    RETURN 0
+}
+
