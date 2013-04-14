@@ -156,17 +156,18 @@ void generate ( FILE *stream, node_t *root )
              * Blocks:
              * Set up/take down activation record, no return value
              */
+            //THIS SEGFAULTS TODO
             //Push EBP
-            instruction_add ( PUSH, ebp, NULL, 0, 0 );
+            //instruction_add ( PUSH, ebp, NULL, 0, 0 );
             
             //Set EBP to top of stack.
-            instruction_add ( MOVE, esp, ebp, 0, 0 );
+            //instruction_add ( MOVE, esp, ebp, 0, 0 );
             
             //Fill in the block
             RECUR();
             
             //Restore EBP
-            instruction_add ( POP, ebp, NULL, 0, 0 );
+            //instruction_add ( POP, ebp, NULL, 0, 0 );
             
             //TODO: Should I set the ESP to the EBP first? Nah
             break;
@@ -180,7 +181,7 @@ void generate ( FILE *stream, node_t *root )
             n_variables = var_list->n_children;
             //This buffer limits the number variables in a scope
             //TODO: Use logarithm to determine required size dynamically.
-            sprintf(buffer,"$%d",n_variables);
+            sprintf(buffer,"$%d",n_variables*4);
             instruction_add(ADD, STRDUP(buffer),esp, 0,0);
 
             //TODO:Remove RECUR??
@@ -205,9 +206,6 @@ void generate ( FILE *stream, node_t *root )
                 case TEXT:
                     string_nr =*((int32_t*)root->children[0]->data);
                     //push string on stack
-
-                    //This buffer limits the number of strings in the program
-                    //TODO: Use logarithm to determine required size dynamically.
                     sprintf(buffer,"$.STRING%d",string_nr);
                     instruction_add(PUSH, STRDUP(buffer),NULL, 0, 0 );
                     instruction_add(SYSCALL, STRDUP("printf"), NULL, 0, 0);
@@ -215,6 +213,10 @@ void generate ( FILE *stream, node_t *root )
                 case VARIABLE:
                     break;
             }
+            //print a newline
+            //10 is ascii code for newline
+            instruction_add(PUSH, STRDUP("$10"),NULL,0,0); 
+            instruction_add(SYSCALL, STRDUP("putchar"),NULL,0,0);
             break;
 
         case EXPRESSION:

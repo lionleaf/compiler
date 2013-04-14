@@ -6,7 +6,7 @@ for inputFile in `ls vsl_programs/*.vsl`; do
 	echo "Testing $inputFile ..."
 	inputFileBase=`basename $inputFile .vsl`
 	./bin/vslc < $inputFile > testOutput/$inputFileBase.s
-	gcc -m32 testOutput/$inputFileBase.s -o testOutput/$inputFileBase.out
+	gcc -m32 -g testOutput/$inputFileBase.s -o testOutput/$inputFileBase.out
 	./testOutput/$inputFileBase.out > testOutput/$inputFileBase.result
 	diff -b vsl_programs/$inputFileBase.output testOutput/$inputFileBase.result > testOutput/$inputFileBase.diff
 	if [ ! -s "testOutput/$inputFileBase.diff" ]; then
