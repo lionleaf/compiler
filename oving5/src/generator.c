@@ -194,6 +194,10 @@ void generate ( FILE *stream, node_t *root )
              * Emit the list of print items, followed by newline (0x0A)
              */
             RECUR();
+            //print a newline
+            //10 is ascii code for newline
+            instruction_add(PUSH, STRDUP("$10"),NULL,0,0); 
+            instruction_add(SYSCALL, STRDUP("putchar"),NULL,0,0);
             break;
 
         case PRINT_ITEM:
@@ -213,10 +217,7 @@ void generate ( FILE *stream, node_t *root )
                 case VARIABLE:
                     break;
             }
-            //print a newline
-            //10 is ascii code for newline
-            instruction_add(PUSH, STRDUP("$10"),NULL,0,0); 
-            instruction_add(SYSCALL, STRDUP("putchar"),NULL,0,0);
+            
             break;
 
         case EXPRESSION:
