@@ -209,34 +209,59 @@ void generate ( FILE *stream, node_t *root )
             break;
 
         case EXPRESSION:
-            //Check whether it's a function call
-            if(strncmp((char*)root->data, "F", 2) == 0){
-                //Structure of a function expression:
-                //Expression
-                //   Variable("function_name")
-                //   EXPRESSION_LIST
-                //      EXPRESSION   //parameter 1
-                //      EXPRESSION   //parameter 2
-                //      ...
+            switch(root->n_children){
+                case 1:
+                    break;
+                case 2:
+                    //Check whether it's a function call
+                    if(strncmp((char*)root->data, "F", 2) == 0){
+                        //TODO:Save registres on the stack!
+                        //Push parameters
+                        if(root->children[1]){ 
+                            generate(stream, root->children[1]);
+                        }
+                        //Push return address and jump to called function
+                        instruction_add(CALL, STRDUP((char*) root->children[0]->data), NULL,0,0);
+                        if(root->children[1]){
+                            //remove parameters, I'll modify esp instead of multiple pops
+                            sprintf(buffer,"$%d",root->children[1]->n_children);
+                            instruction_add(ADD, STRDUP(buffer), esp, 0, 0);
+                        }
 
-                //TODO:Save registres on the stack!
-                //Push parameters
-                if(root->children[1]){ 
-                    generate(stream, root->children[1]);
-                }
-                //Push return address and jump to called function
-                instruction_add(CALL, STRDUP((char*) root->children[0]->data), NULL,0,0);
-                if(root->children[1]){
-                    //remove parameters, I'll modify esp instead of multiple pops
-                    sprintf(buffer,"$%d",root->children[1]->n_children);
-                    instruction_add(ADD, STRDUP(buffer), esp, 0, 0);
-                }
-                
-                //TODO:restore registers
-                //push result to stack, as this is an expression
-                instruction_add(PUSH, eax, NULL, 0,0);
-            }else{
+                        //TODO:restore registers
+                        //push result to stack, as this is an expression
+                        instruction_add(PUSH, eax, NULL, 0,0);
+                    }else{
+                        switch(*((char*)root->data)){
+                            case '+':
                                 RECUR();
+                                instruction_add(POP,ebx,NULL,0,0);
+                                instruction_add(POP,eax,NULL,0,0);
+                                instruction_add(ADD,ebx,eax,0,0);
+                                instruction_add(PUSH,eax,NULL,0,0);
+                                break;
+                            case '-':
+                                RECUR();
+                                instruction_add(POP,ebx,NULL,0,0);
+                                instruction_add(POP,eax,NULL,0,0);
+                                instruction_add(SUB,ebx,eax,0,0);
+                                instruction_add(PUSH,eax,NULL,0,0);
+                                break;
+                            case '*':
+                                break;
+                            case '/':
+                                break;
+                            case '<':
+                                break;
+                            case '>':
+
+                                break;
+                            default:
+                                RECUR();
+                        }
+
+                    }
+                    break;
             }
             break;
 
