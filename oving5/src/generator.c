@@ -133,8 +133,8 @@ void generate ( FILE *stream, node_t *root )
             //Set EBP to top of stack.
             instruction_add ( MOVE, esp, ebp, 0, 0 );
 
-            //Execute
-            RECUR();
+            //Execute the expression of the function
+            generate(stream, root->children[2]);
 
             //ESP = EBP
             //Restore old EBP
@@ -176,7 +176,7 @@ void generate ( FILE *stream, node_t *root )
             //This buffer limits the number variables in a scope
             //TODO: Use logarithm to determine required size dynamically.
             sprintf(buffer,"$%d",n_variables*4);
-            instruction_add(ADD, STRDUP(buffer),esp, 0,0);
+            instruction_add(SUB, STRDUP(buffer),esp, 0,0);
             break;
 
         case PRINT_LIST:
@@ -242,7 +242,7 @@ void generate ( FILE *stream, node_t *root )
                 if(temp_node){
                     //remove parameters, I'll modify esp instead of multiple pops
                     sprintf(buffer,"$%d",temp_node->n_children);
-                    instruction_add(SUB, STRDUP(buffer), esp, 0, 0);
+                    instruction_add(ADD, STRDUP(buffer), esp, 0, 0);
                 }
                 
                 //restore registers
@@ -259,7 +259,7 @@ void generate ( FILE *stream, node_t *root )
              * - Find the variable's stack offset
              * - If var is not local, unwind the stack to its correct base
              */
-            instruction_add(PUSH, esp, NULL, root->entry->stack_offset, 0);
+            instruction_add(PUSH, ebp, NULL, root->entry->stack_offset, 0);
             break;
 
         case INTEGER:
@@ -284,7 +284,7 @@ void generate ( FILE *stream, node_t *root )
             instruction_add(POP, ebx,NULL,0,0);
 
             //Store ebx into the address of the variable on the LHS
-            instruction_add(MOVE, ebx, esp, 0, root->children[0]->entry->stack_offset);
+            instruction_add(MOVE, ebx, ebp, 0, root->children[0]->entry->stack_offset);
             break;
 
         case RETURN_STATEMENT:
