@@ -211,6 +211,15 @@ void generate ( FILE *stream, node_t *root )
         case EXPRESSION:
             switch(root->n_children){
                 case 1:
+                    if(*((char*)root->data) == '-'){
+                        RECUR();
+                        instruction_add(POP,ebx,NULL,0,0);
+                        instruction_add(MOVE,STRDUP("$0"),eax,0,0);
+                        instruction_add(SUB,ebx,eax,0,0);
+                        instruction_add(PUSH,eax,NULL,0,0);
+                    }else{
+                        RECUR();
+                    }
                     break;
                 case 2:
                     //Check whether it's a function call
@@ -261,7 +270,6 @@ void generate ( FILE *stream, node_t *root )
                                 instruction_add(STRING,STRDUP("\tcdq"),NULL,0,0);
                                 instruction_add(DIV,ebx,NULL,0,0);
                                 instruction_add(PUSH,eax,NULL,0,0);
-                                
                                 break;
                             case '<':
                                 break;
