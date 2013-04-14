@@ -199,6 +199,7 @@ void generate ( FILE *stream, node_t *root )
                     instruction_add(PUSH, STRDUP(buffer),NULL, 0, 0 );
                     instruction_add(SYSCALL, STRDUP("printf"), NULL, 0, 0);
                     break;
+                case EXPRESSION:
                 case VARIABLE:
                     generate(stream,root->children[0]);
                     instruction_add(PUSH, STRDUP("$.INTEGER"), NULL, 0, 0);
