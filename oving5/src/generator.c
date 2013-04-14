@@ -30,6 +30,10 @@ typedef struct instr {
 /* Start and last element for emitting/appending instructions */
 static instruction_t *start = NULL, *last = NULL;
 
+//Variable to make using variables cleaner.
+//When a variable node is reached, it will store it's stack_offset
+//here, so we can use this directly.
+int32_t last_stack_offset;
 /*
  * Track the scope depth when traversing the tree - init. value may depend on
  * how the symtab was built
@@ -97,7 +101,7 @@ void generate ( FILE *stream, node_t *root )
     {   
         int32_t n_variables;
         int32_t string_nr; 
-        node_t* var_list;
+        node_t* temp_node;
         //Buffer used for representing numbers and the like
         //TODO: Check implications of the size of it.
         char buffer[12];
@@ -142,9 +146,7 @@ void generate ( FILE *stream, node_t *root )
             //Restore old EBP
             instruction_add ( POP, ebp, NULL, 0, 0 );
 
-
-            //Return value is in EAX??
-            
+            //Return value is in EAX.
 
             //Pop return adress and jump there.
             instruction_add(POP, ebx, NULL, 0, 0);
@@ -177,8 +179,7 @@ void generate ( FILE *stream, node_t *root )
              * Declarations:
              * Add space on local stack
              */
-            var_list = root->children[0];
-            n_variables = var_list->n_children;
+            n_variables = root->children[0]->n_children;
             //This buffer limits the number variables in a scope
             //TODO: Use logarithm to determine required size dynamically.
             sprintf(buffer,"$%d",n_variables*4);
@@ -189,11 +190,10 @@ void generate ( FILE *stream, node_t *root )
             break;
 
         case PRINT_LIST:
-            /*
-             * Print lists:
-             * Emit the list of print items, followed by newline (0x0A)
-             */
+            
+            //Recursively print the list
             RECUR();
+
             //print a newline
             //10 is ascii code for newline
             instruction_add(PUSH, STRDUP("$10"),NULL,0,0); 
@@ -201,11 +201,6 @@ void generate ( FILE *stream, node_t *root )
             break;
 
         case PRINT_ITEM:
-            /*
-             * Items in print lists:
-             * Determine what kind of value (string literal or expression)
-             * and set up a suitable call to printf
-             **/
             switch(root->children[0]->type.index){
                 case TEXT:
                     string_nr =*((int32_t*)root->children[0]->data);
@@ -215,6 +210,9 @@ void generate ( FILE *stream, node_t *root )
                     instruction_add(SYSCALL, STRDUP("printf"), NULL, 0, 0);
                     break;
                 case VARIABLE:
+                    instruction_add(PUSH, esp, NULL, root->children[0]->entry->stack_offset, 0);
+                    instruction_add(PUSH, STRDUP("$.INTEGER"), NULL, 0, 0);
+                    instruction_add(SYSCALL, STRDUP("printf"), NULL, 0, 0);
                     break;
             }
             
@@ -227,11 +225,42 @@ void generate ( FILE *stream, node_t *root )
              * top of the stack according to the kind of expression
              * (single variables/integers handled in separate switch/cases)
              */
-            //For functions (If they are handled here...): 
-            //Save registres on stack
-            //Push parameters
-            //Push return address
-            //jump to called function
+            
+            if(strncmp((char*)root->data, "F", 2) == 0){
+                //Structure of a function expression:
+                //Expression
+                //   Variable("function_name")
+                //   EXPRESSION_LIST
+                //      EXPRESSION   //parameter 1
+                //      EXPRESSION   //parameter 2
+                //      ...
+
+                //save registres on the stack!
+                //Push parameters
+                
+                temp_node = root->children[1]; //EXPRESSION_LIST
+                if(temp_node){
+                    //Push parameters on the stack in the inverse order.
+                    for ( int32_t i = temp_node->n_children - 1; i>= 0; i--){
+                        generate(stream, temp_node->children[i]);
+                    }
+                }
+                //Push return address
+                //call does this autmagically?!
+                //jump to called function
+                instruction_add(CALL, STRDUP((char*) root->children[0]->data), NULL,0,0);
+                if(temp_node){
+                    //remove parameters, I'll modify esp instead of multiple pops
+                    sprintf(buffer,"$%d",temp_node->n_children);
+                    instruction_add(SUB, STRDUP(buffer), esp, 0, 0);
+                }
+                
+                //restore registers
+                //push result to stack, as this is an expression
+                instruction_add(PUSH, eax, NULL, 0,0);
+            }else{
+                RECUR();
+            }
             break;
 
         case VARIABLE:
@@ -240,14 +269,15 @@ void generate ( FILE *stream, node_t *root )
              * - Find the variable's stack offset
              * - If var is not local, unwind the stack to its correct base
              */
-
+            instruction_add(PUSH, esp, NULL, root->entry->stack_offset, 0);
             break;
 
         case INTEGER:
             /*
              * Integers: constants which can just be put on stack
              */
-
+            sprintf(buffer, "$%d",*((int32_t*)root->data));
+            instruction_add(PUSH,   STRDUP(buffer), NULL, 0, 0);
             break;
 
         case ASSIGNMENT_STATEMENT:
@@ -256,7 +286,14 @@ void generate ( FILE *stream, node_t *root )
              * Right hand side is an expression, find left hand side on stack
              * (unwinding if necessary)
              */
+            //Start by a recursion to calculate the expression
+            RECUR();
 
+            //Store result of right hand expression in ebx
+            instruction_add(POP, ebx,NULL,0,0);
+
+            //Store ebx into the address of the variable on the LHS
+            instruction_add(MOVE, ebx, esp, 0, last_stack_offset);
             break;
 
         case RETURN_STATEMENT:
@@ -264,6 +301,11 @@ void generate ( FILE *stream, node_t *root )
              * Return statements:
              * Evaluate the expression and put it in EAX
              */
+            //evaluate expression through recursion
+            RECUR();
+
+            //Result of expression is top of stack, so pop into eax
+            instruction_add(POP, eax, NULL, 0, 0);
             break;
 
         default:
