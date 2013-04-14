@@ -30,10 +30,6 @@ typedef struct instr {
 /* Start and last element for emitting/appending instructions */
 static instruction_t *start = NULL, *last = NULL;
 
-//Variable to make using variables cleaner.
-//When a variable node is reached, it will store it's stack_offset
-//here, so we can use this directly.
-int32_t last_stack_offset;
 /*
  * Track the scope depth when traversing the tree - init. value may depend on
  * how the symtab was built
@@ -287,13 +283,14 @@ void generate ( FILE *stream, node_t *root )
              * (unwinding if necessary)
              */
             //Start by a recursion to calculate the expression
-            RECUR();
+            //Be careful not to generate the variable, as we don't want it on the stack
+            generate(stream, root->children[1]);
 
             //Store result of right hand expression in ebx
             instruction_add(POP, ebx,NULL,0,0);
 
             //Store ebx into the address of the variable on the LHS
-            instruction_add(MOVE, ebx, esp, 0, last_stack_offset);
+            instruction_add(MOVE, ebx, esp, 0, root->children[0]->entry->stack_offset);
             break;
 
         case RETURN_STATEMENT:
