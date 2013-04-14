@@ -248,13 +248,24 @@ void generate ( FILE *stream, node_t *root )
                                 instruction_add(PUSH,eax,NULL,0,0);
                                 break;
                             case '*':
+                                RECUR();
+                                instruction_add(POP,ebx,NULL,0,0);
+                                instruction_add(POP,eax,NULL,0,0);
+                                instruction_add(MUL,ebx,NULL,0,0);
+                                instruction_add(PUSH,eax,NULL,0,0);
                                 break;
                             case '/':
+                                RECUR();
+                                instruction_add(POP,ebx,NULL,0,0);
+                                instruction_add(POP,eax,NULL,0,0);
+                                instruction_add(STRING,STRDUP("\tcdq"),NULL,0,0);
+                                instruction_add(DIV,ebx,NULL,0,0);
+                                instruction_add(PUSH,eax,NULL,0,0);
+                                
                                 break;
                             case '<':
                                 break;
                             case '>':
-
                                 break;
                             default:
                                 RECUR();
