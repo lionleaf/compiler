@@ -127,18 +127,9 @@ void generate ( FILE *stream, node_t *root )
             //Add label.
             instruction_add(LABEL, STRDUP(funcname),NULL,0,0);
 
-            // Save old EBP on stack.
-            instruction_add ( PUSH, ebp, NULL, 0, 0 );
-            
-            //Set EBP to top of stack.
-            instruction_add ( MOVE, esp, ebp, 0, 0 );
-
             //Execute the expression of the function
             generate(stream, root->children[2]);
 
-            //ESP = EBP
-            //Restore old EBP
-            instruction_add (LEAVE, NULL, NULL, 0, 0);
 
             //Return value is in EAX.
             
@@ -153,16 +144,16 @@ void generate ( FILE *stream, node_t *root )
              */
             //THIS SEGFAULTS TODO
             //Push EBP
-            //instruction_add ( PUSH, ebp, NULL, 0, 0 );
+            instruction_add ( PUSH, ebp, NULL, 0, 0 );
             
             //Set EBP to top of stack.
-            //instruction_add ( MOVE, esp, ebp, 0, 0 );
+            instruction_add ( MOVE, esp, ebp, 0, 0 );
             
             //Fill in the block
             RECUR();
             
             //Restore EBP
-            //instruction_add ( POP, ebp, NULL, 0, 0 );
+            instruction_add ( LEAVE, NULL, NULL, 0, 0 );
             
             //TODO: Should I set the ESP to the EBP first? Nah
             break;
