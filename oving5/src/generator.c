@@ -209,13 +209,7 @@ void generate ( FILE *stream, node_t *root )
             break;
 
         case EXPRESSION:
-            /*
-             * Expressions:
-             * Handle any nested expressions first, then deal with the
-             * top of the stack according to the kind of expression
-             * (single variables/integers handled in separate switch/cases)
-             */
-            
+            //Check whether it's a function call
             if(strncmp((char*)root->data, "F", 2) == 0){
                 //Structure of a function expression:
                 //Expression
@@ -225,31 +219,24 @@ void generate ( FILE *stream, node_t *root )
                 //      EXPRESSION   //parameter 2
                 //      ...
 
-                //save registres on the stack!
+                //TODO:Save registres on the stack!
                 //Push parameters
-                
-                temp_node = root->children[1]; //EXPRESSION_LIST
-                if(temp_node){
-                    //Push parameters on the stack in the inverse order.
-                    for ( int32_t i = temp_node->n_children - 1; i>= 0; i--){
-                        generate(stream, temp_node->children[i]);
-                    }
+                if(root->children[1]){ 
+                    generate(stream, root->children[1]);
                 }
-                //Push return address
-                //call does this autmagically?!
-                //jump to called function
+                //Push return address and jump to called function
                 instruction_add(CALL, STRDUP((char*) root->children[0]->data), NULL,0,0);
-                if(temp_node){
+                if(root->children[1]){
                     //remove parameters, I'll modify esp instead of multiple pops
-                    sprintf(buffer,"$%d",temp_node->n_children);
+                    sprintf(buffer,"$%d",root->children[1]->n_children);
                     instruction_add(ADD, STRDUP(buffer), esp, 0, 0);
                 }
                 
-                //restore registers
+                //TODO:restore registers
                 //push result to stack, as this is an expression
                 instruction_add(PUSH, eax, NULL, 0,0);
             }else{
-                RECUR();
+                                RECUR();
             }
             break;
 
