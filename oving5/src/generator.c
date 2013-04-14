@@ -137,16 +137,13 @@ void generate ( FILE *stream, node_t *root )
             RECUR();
 
             //ESP = EBP
-            instruction_add ( MOVE, ebp, esp, 0, 0 );
-
             //Restore old EBP
-            instruction_add ( POP, ebp, NULL, 0, 0 );
+            instruction_add (LEAVE, NULL, NULL, 0, 0);
 
             //Return value is in EAX.
-
+            
             //Pop return adress and jump there.
-            instruction_add(POP, ebx, NULL, 0, 0);
-            instruction_add( JUMP, ebx, NULL, 0, 0);
+            instruction_add(RET, NULL, NULL, 0, 0);
             break;
 
         case BLOCK:
