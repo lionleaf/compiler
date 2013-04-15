@@ -106,10 +106,10 @@ void generate ( FILE *stream, node_t *root )
             /* Output the data segment */
             strings_output ( stream );
             instruction_add ( STRING, STRDUP( ".text" ), NULL, 0, 0 );
-
+            
             RECUR();
             TEXT_HEAD();
-
+            
             /* TODO: Insert a call to the first defined function here */
 
             //program->function_list->function->variable
@@ -126,10 +126,18 @@ void generate ( FILE *stream, node_t *root )
             funcname =  root->children[0]->entry->label;
             //Add label.
             instruction_add(LABEL, STRDUP(funcname),NULL,0,0);
-
             //Execute the expression of the function
+            //Push EBP
+            instruction_add ( PUSH, ebp, NULL, 0, 0 );
+            
+            //Set EBP to top of stack.
+            instruction_add ( MOVE, esp, ebp, 0, 0 );
+            depth++;
             generate(stream, root->children[2]);
+            depth--;
 
+            //Restore EBP
+            instruction_add ( LEAVE, NULL, NULL, 0, 0 );
 
             //Return value is in EAX.
             
@@ -148,10 +156,10 @@ void generate ( FILE *stream, node_t *root )
             
             //Set EBP to top of stack.
             instruction_add ( MOVE, esp, ebp, 0, 0 );
-            
+            depth++;
             //Fill in the block
             RECUR();
-            
+            depth--;
             //Restore EBP
             instruction_add ( LEAVE, NULL, NULL, 0, 0 );
             
@@ -282,7 +290,13 @@ void generate ( FILE *stream, node_t *root )
              * - Find the variable's stack offset
              * - If var is not local, unwind the stack to its correct base
              */
-            instruction_add(PUSH, ebp, NULL, root->entry->stack_offset, 0);
+
+            instruction_add(MOVE, ebp, ebx, 0, 0);
+            for(int i = 0; i < depth - root->entry->depth; i++){
+                instruction_add(STRING, \ 
+                        STRDUP("\tmovl (\%ebx), \%ebx"), NULL, 0, 0);
+            }
+            instruction_add(PUSH, ebx, NULL, root->entry->stack_offset, 0);
             break;
 
         case INTEGER:
@@ -303,11 +317,18 @@ void generate ( FILE *stream, node_t *root )
             //Be careful not to generate the variable, as we don't want it on the stack
             generate(stream, root->children[1]);
 
-            //Store result of right hand expression in ebx
-            instruction_add(POP, ebx,NULL,0,0);
+            //Store result of right hand expression in eax
+            instruction_add(POP, eax,NULL,0,0);
+            
+            //Move to the correct scope!
+            instruction_add(MOVE, ebp, ebx, 0, 0);
+            for(int i = 0; i < depth - root->children[0]->entry->depth; i++){
+                instruction_add(STRING, \ 
+                        STRDUP("\tmovl (\%ebx), \%ebx"), NULL, 0, 0);
+            }
 
-            //Store ebx into the address of the variable on the LHS
-            instruction_add(MOVE, ebx, ebp, 0, root->children[0]->entry->stack_offset);
+            //Store eax into the address of the variable on the LHS
+            instruction_add(MOVE, eax, ebx, 0, root->children[0]->entry->stack_offset);
             break;
 
         case RETURN_STATEMENT:

@@ -1,9 +1,0 @@
-// This program tests activation records, function call and return
-
-FUNC funcall ()
-{
-    VAR a, b
-    PRINT "Here are some numbers "
-    RETURN 0
-}
-
