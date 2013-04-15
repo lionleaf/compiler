@@ -137,12 +137,13 @@ void generate ( FILE *stream, node_t *root )
             depth--;
 
             //Restore EBP
-            instruction_add ( LEAVE, NULL, NULL, 0, 0 );
+            //instruction_add ( LEAVE, NULL, NULL, 0, 0 );
 
             //Return value is in EAX.
             
             //Pop return adress and jump there.
-            instruction_add(RET, NULL, NULL, 0, 0);
+            //instruction_add(RET, NULL, NULL, 0, 0);
+            //Done in return statement
             break;
 
         case BLOCK:
@@ -272,11 +273,57 @@ void generate ( FILE *stream, node_t *root )
                                 instruction_add(PUSH,eax,NULL,0,0);
                                 break;
                             case '<':
+                                RECUR();
+                                instruction_add(POP,ebx,NULL,0,0);
+                                instruction_add(POP,eax,NULL,0,0);
+                                instruction_add(CMP,ebx,eax,0,0);
+                                if(strncmp((char*)root->data,"<=",2) == 0){
+                                    instruction_add(SETLE,al,NULL,0,0);
+                                }else{
+                                    instruction_add(SETL,al,NULL,0,0);
+                                }
+                                instruction_add(CBW,al,NULL,0,0);
+                                instruction_add(CWDE,NULL,NULL,0,0);
+                                instruction_add(PUSH,eax,NULL,0,0);
                                 break;
                             case '>':
+                                RECUR();
+                                instruction_add(POP,ebx,NULL,0,0);
+                                instruction_add(POP,eax,NULL,0,0);
+                                instruction_add(CMP,ebx,eax,0,0);
+                                if(strncmp((char*)root->data,">=",2) == 0){
+                                    instruction_add(SETGE,al,NULL,0,0);
+                                }else{
+                                    instruction_add(SETG,al,NULL,0,0);
+                                }
+                                instruction_add(CBW,al,NULL,0,0);
+                                instruction_add(CWDE,NULL,NULL,0,0);
+                                instruction_add(PUSH,eax,NULL,0,0);
                                 break;
                             default:
-                                RECUR();
+                                //TODO: Refactor all these comperators.
+                                if(strncmp((char*)root->data,"==",2) == 0){
+                                    RECUR();
+                                    instruction_add(POP,ebx,NULL,0,0);
+                                    instruction_add(POP,eax,NULL,0,0);
+                                    instruction_add(CMP,ebx,eax,0,0);
+                                    instruction_add(SETE,al,NULL,0,0);
+                                    instruction_add(CBW,al,NULL,0,0);
+                                    instruction_add(CWDE,NULL,NULL,0,0);
+                                    instruction_add(PUSH,eax,NULL,0,0);
+                                }
+                                else if(strncmp((char*)root->data,"!=",2) == 0){
+                                    RECUR();
+                                    instruction_add(POP,ebx,NULL,0,0);
+                                    instruction_add(POP,eax,NULL,0,0);
+                                    instruction_add(CMP,ebx,eax,0,0);
+                                    instruction_add(SETNE,al,NULL,0,0);
+                                    instruction_add(CBW,al,NULL,0,0);
+                                    instruction_add(CWDE,NULL,NULL,0,0);
+                                    instruction_add(PUSH,eax,NULL,0,0);
+                                }else{
+                                    RECUR();
+                                }
                         }
 
                     }
@@ -293,8 +340,8 @@ void generate ( FILE *stream, node_t *root )
 
             instruction_add(MOVE, ebp, ebx, 0, 0);
             for(int i = 0; i < depth - root->entry->depth; i++){
-                instruction_add(STRING, \ 
-                        STRDUP("\tmovl (\%ebx), \%ebx"), NULL, 0, 0);
+                instruction_add(STRING,  
+                        STRDUP("\tmovl\t(\%ebx), \%ebx"), NULL, 0, 0);
             }
             instruction_add(PUSH, ebx, NULL, root->entry->stack_offset, 0);
             break;
@@ -323,8 +370,8 @@ void generate ( FILE *stream, node_t *root )
             //Move to the correct scope!
             instruction_add(MOVE, ebp, ebx, 0, 0);
             for(int i = 0; i < depth - root->children[0]->entry->depth; i++){
-                instruction_add(STRING, \ 
-                        STRDUP("\tmovl (\%ebx), \%ebx"), NULL, 0, 0);
+                instruction_add(STRING,  
+                        STRDUP("\tmovl\t(\%ebx), \%ebx"), NULL, 0, 0);
             }
 
             //Store eax into the address of the variable on the LHS
@@ -341,6 +388,11 @@ void generate ( FILE *stream, node_t *root )
 
             //Result of expression is top of stack, so pop into eax
             instruction_add(POP, eax, NULL, 0, 0);
+            //When we return from a function, we return from depth 1
+            for(int i = depth; i > 1; i--){
+                instruction_add(LEAVE, NULL, NULL, 0, 0 );
+            }
+            instruction_add(RET, NULL, NULL,0,0);
             break;
 
         default:
