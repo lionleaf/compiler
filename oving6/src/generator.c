@@ -390,22 +390,39 @@ void generate ( FILE *stream, node_t *root )
             //Generate the conditional.
             generate(stream, root->children[0]);
             
-            //Jump past if body if conditional is zero.
-            sprintf(buffer, "_end%d",elegant_solution); 
-            instruction_add(POP, eax, NULL, 0,0);
+                       instruction_add(POP, eax, NULL, 0,0);
 
             // test %eax %eax
             // je  label 
             // will jump to label if %eax is 0
             instruction_add(STRING, STRDUP("\ttestl\t\%eax,\%eax"),NULL,0,0);
+            //Jump past if body if conditional is zero.
+            sprintf(buffer, "_end%d",elegant_solution); 
             instruction_add(JUMPZERO, STRDUP(buffer),NULL,0,0);
             //Assembly for the if body
             generate(stream, root->children[1]);
 
-            //buffer could've been changed in the body, 
-            //but we still have elegant_solution
-            sprintf(buffer, "end%d",elegant_solution); 
-            instruction_add(LABEL, STRDUP(buffer),NULL,0,0);
+            if(root->n_children > 2){ // we have an else!
+                //jump past the else
+                sprintf(buffer, "_end%d",label_id); 
+                instruction_add(JUMP, STRDUP(buffer),NULL,0,0);
+
+                sprintf(buffer, "end%d",elegant_solution); 
+                instruction_add(LABEL, STRDUP(buffer),NULL,0,0);
+
+                //Save the label_id used to jump past the else
+                elegant_solution = label_id;
+                label_id++;
+            }else{ //no else
+                sprintf(buffer, "end%d",elegant_solution); 
+                instruction_add(LABEL, STRDUP(buffer),NULL,0,0);
+            }
+
+            if(root->n_children > 2){ // we have an else!
+                generate(stream, root->children[2]);
+                sprintf(buffer, "end%d",elegant_solution); 
+                instruction_add(LABEL, STRDUP(buffer),NULL,0,0);
+            }
             break;
         default:
             /* Everything else can just continue through the tree */
