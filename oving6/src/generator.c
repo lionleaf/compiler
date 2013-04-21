@@ -104,8 +104,8 @@ void generate ( FILE *stream, node_t *root )
         node_t* temp_node;
         //Buffer used for representing numbers and the like
         //TODO: Check implications of the size of it.
-        //12 is MAGIC for now!!
-        char buffer[12];
+        //20 is MAGIC for now!!
+        char buffer[20];
 
         case PROGRAM:
             /* Output the data segment */
@@ -404,25 +404,22 @@ void generate ( FILE *stream, node_t *root )
 
             if(root->n_children > 2){ // we have an else!
                 //jump past the else
-                sprintf(buffer, "_end%d",label_id); 
+                sprintf(buffer, "_endelse%d",elegant_solution); 
                 instruction_add(JUMP, STRDUP(buffer),NULL,0,0);
-
-                sprintf(buffer, "end%d",elegant_solution); 
-                instruction_add(LABEL, STRDUP(buffer),NULL,0,0);
-
-                //Save the label_id used to jump past the else
-                elegant_solution = label_id;
-                label_id++;
-            }else{ //no else
-                sprintf(buffer, "end%d",elegant_solution); 
-                instruction_add(LABEL, STRDUP(buffer),NULL,0,0);
             }
+
+            sprintf(buffer, "end%d",elegant_solution); 
+            instruction_add(LABEL, STRDUP(buffer),NULL,0,0);
 
             if(root->n_children > 2){ // we have an else!
                 generate(stream, root->children[2]);
-                sprintf(buffer, "end%d",elegant_solution); 
+                sprintf(buffer, "endelse%d",elegant_solution); 
                 instruction_add(LABEL, STRDUP(buffer),NULL,0,0);
             }
+            break;
+        case WHILE_STATEMENT:
+            elegant_solution = label_id;
+            label_id++;
             break;
         default:
             /* Everything else can just continue through the tree */
