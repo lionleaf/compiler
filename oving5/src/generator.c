@@ -100,6 +100,7 @@ void generate ( FILE *stream, node_t *root )
         node_t* temp_node;
         //Buffer used for representing numbers and the like
         //TODO: Check implications of the size of it.
+        //12 is MAGIC for now!!
         char buffer[12];
 
         case PROGRAM:
@@ -110,7 +111,6 @@ void generate ( FILE *stream, node_t *root )
             RECUR();
             TEXT_HEAD();
             
-            /* TODO: Insert a call to the first defined function here */
 
             //program->function_list->function->variable
             char* first_func = root->children[0]->children[0]->children[0]->entry->label;
@@ -136,14 +136,16 @@ void generate ( FILE *stream, node_t *root )
             generate(stream, root->children[2]);
             depth--;
 
-            //Restore EBP
-            //instruction_add ( LEAVE, NULL, NULL, 0, 0 );
 
-            //Return value is in EAX.
-            
-            //Pop return adress and jump there.
-            //instruction_add(RET, NULL, NULL, 0, 0);
-            //Done in return statement
+            //This will probably be dead code,
+            //but it seems VSL should compile
+            //functions without a return.
+            //So let's return 0 at the end
+            //of every function, even though there 
+            //might be a return above it.
+            instruction_add(MOVE, STRDUP("$0"), eax, 0, 0);
+            instruction_add(LEAVE, NULL, NULL, 0, 0 );
+            instruction_add(RET, NULL, NULL,0,0);
             break;
 
         case BLOCK:
@@ -164,7 +166,6 @@ void generate ( FILE *stream, node_t *root )
             //Restore EBP
             instruction_add ( LEAVE, NULL, NULL, 0, 0 );
             
-            //TODO: Should I set the ESP to the EBP first? Nah
             break;
 
         case DECLARATION:
@@ -225,7 +226,12 @@ void generate ( FILE *stream, node_t *root )
                 case 2:
                     //Check whether it's a function call
                     if(strncmp((char*)root->data, "F", 2) == 0){
-                        //TODO:Save registres on the stack!
+
+                        //Because VSL and my compiler never need
+                        //to keep the state of registres between
+                        //function calls, I will not store
+                        //the registers on the stack.
+
                         //Push parameters
                         if(root->children[1]){ 
                             generate(stream, root->children[1]);
@@ -238,7 +244,6 @@ void generate ( FILE *stream, node_t *root )
                             instruction_add(ADD, STRDUP(buffer), esp, 0, 0);
                         }
 
-                        //TODO:restore registers
                         //push result to stack, as this is an expression
                         instruction_add(PUSH, eax, NULL, 0,0);
                     }else{
@@ -273,57 +278,35 @@ void generate ( FILE *stream, node_t *root )
                                 instruction_add(PUSH,eax,NULL,0,0);
                                 break;
                             case '<':
+                            case '>':
+                            case '=':
+                            case '!':
                                 RECUR();
                                 instruction_add(POP,ebx,NULL,0,0);
                                 instruction_add(POP,eax,NULL,0,0);
                                 instruction_add(CMP,ebx,eax,0,0);
+                                
                                 if(strncmp((char*)root->data,"<=",2) == 0){
                                     instruction_add(SETLE,al,NULL,0,0);
-                                }else{
+                                }else if(strncmp((char*)root->data,"<",2)==0){
                                     instruction_add(SETL,al,NULL,0,0);
-                                }
-                                instruction_add(CBW,al,NULL,0,0);
-                                instruction_add(CWDE,NULL,NULL,0,0);
-                                instruction_add(PUSH,eax,NULL,0,0);
-                                break;
-                            case '>':
-                                RECUR();
-                                instruction_add(POP,ebx,NULL,0,0);
-                                instruction_add(POP,eax,NULL,0,0);
-                                instruction_add(CMP,ebx,eax,0,0);
-                                if(strncmp((char*)root->data,">=",2) == 0){
+                                }else if(strncmp((char*)root->data,">=",2)==0){
                                     instruction_add(SETGE,al,NULL,0,0);
-                                }else{
+                                }else if(strncmp((char*)root->data,">",2)==0){
                                     instruction_add(SETG,al,NULL,0,0);
+                                }else if(strncmp((char*)root->data,"==",2)==0){
+                                    instruction_add(SETE,al,NULL,0,0);
+                                }else if(strncmp((char*)root->data,"!=",2)==0){
+                                    instruction_add(SETNE,al,NULL,0,0);
                                 }
+
+
                                 instruction_add(CBW,al,NULL,0,0);
                                 instruction_add(CWDE,NULL,NULL,0,0);
                                 instruction_add(PUSH,eax,NULL,0,0);
                                 break;
                             default:
-                                //TODO: Refactor all these comperators.
-                                if(strncmp((char*)root->data,"==",2) == 0){
-                                    RECUR();
-                                    instruction_add(POP,ebx,NULL,0,0);
-                                    instruction_add(POP,eax,NULL,0,0);
-                                    instruction_add(CMP,ebx,eax,0,0);
-                                    instruction_add(SETE,al,NULL,0,0);
-                                    instruction_add(CBW,al,NULL,0,0);
-                                    instruction_add(CWDE,NULL,NULL,0,0);
-                                    instruction_add(PUSH,eax,NULL,0,0);
-                                }
-                                else if(strncmp((char*)root->data,"!=",2) == 0){
-                                    RECUR();
-                                    instruction_add(POP,ebx,NULL,0,0);
-                                    instruction_add(POP,eax,NULL,0,0);
-                                    instruction_add(CMP,ebx,eax,0,0);
-                                    instruction_add(SETNE,al,NULL,0,0);
-                                    instruction_add(CBW,al,NULL,0,0);
-                                    instruction_add(CWDE,NULL,NULL,0,0);
-                                    instruction_add(PUSH,eax,NULL,0,0);
-                                }else{
-                                    RECUR();
-                                }
+                                RECUR();
                         }
 
                     }

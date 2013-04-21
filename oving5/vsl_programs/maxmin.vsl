@@ -1,11 +1,11 @@
 FUNC maxmin()
 {
 	VAR a, b, c, d, e
-	a := min(5,6)
-	//b := min(-1,4)
-	//c := max(0,0)
+	a := max(5,6)
+	b := min(-1,4)
+	c := max(0,0)
 	
-	PRINT "a is: ", a//, "b is: ", b, "c is: ", c
+	PRINT "a is: ", a, "b is: ", b, "c is: ", c
 }
 
 // Returns maximum of a and b, or zero if equal
