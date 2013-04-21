@@ -342,11 +342,6 @@ void generate ( FILE *stream, node_t *root )
             break;
 
         case ASSIGNMENT_STATEMENT:
-            /*
-             * Assignments:
-             * Right hand side is an expression, find left hand side on stack
-             * (unwinding if necessary)
-             */
             //Start by a recursion to calculate the expression
             //Be careful not to generate the variable, as we don't want it on the stack
             generate(stream, root->children[1]);
@@ -390,10 +385,7 @@ void generate ( FILE *stream, node_t *root )
             //Generate the conditional.
             generate(stream, root->children[0]);
             
-                       instruction_add(POP, eax, NULL, 0,0);
-
-            // test %eax %eax
-            // je  label 
+            instruction_add(POP, eax, NULL, 0,0);
             // will jump to label if %eax is 0
             instruction_add(STRING, STRDUP("\ttestl\t\%eax,\%eax"),NULL,0,0);
             //Jump past if body if conditional is zero.
@@ -420,6 +412,71 @@ void generate ( FILE *stream, node_t *root )
         case WHILE_STATEMENT:
             elegant_solution = label_id;
             label_id++;
+            
+            sprintf(buffer, "start_while%d", elegant_solution);
+            instruction_add(LABEL, STRDUP(buffer), NULL, 0,0);
+
+            //Calculate condition
+            generate(stream, root->children[0]);
+
+            instruction_add(POP, eax, NULL, 0,0);
+            // will jump to label if %eax is 0
+            instruction_add(STRING, STRDUP("\ttestl\t\%eax,\%eax"),NULL,0,0);
+            //Jump past if body if conditional is zero.
+            sprintf(buffer, "_end_while%d",elegant_solution); 
+            instruction_add(JUMPZERO, STRDUP(buffer),NULL,0,0);
+
+            //loop body
+            generate(stream, root->children[1]);
+
+            sprintf(buffer, "_start_while%d",elegant_solution);
+            instruction_add(JUMP, STRDUP(buffer), NULL, 0, 0);
+
+            sprintf(buffer, "end_while%d",elegant_solution); 
+            instruction_add(LABEL, STRDUP(buffer), NULL, 0, 0);
+            break;
+        case FOR_STATEMENT:
+            elegant_solution = label_id;
+            label_id++;
+             //Execute assignment
+            generate(stream, root->children[0]);
+
+            //temp_node is now the variable that we iterate with
+            temp_node = root->children[0]->children[0];
+           
+            sprintf(buffer, "start_for%d", elegant_solution);
+            instruction_add(LABEL, STRDUP(buffer), NULL, 0,0);
+
+            //evaluate end-condition expression
+            generate(stream, root->children[1]);
+            
+            //push the variable
+            generate(stream, temp_node);
+            
+            //compare
+            instruction_add(POP,ebx,NULL,0,0);
+            instruction_add(POP,eax,NULL,0,0);
+            instruction_add(CMP,eax,ebx,0,0);
+            sprintf(buffer,"\tjge\t_end%d",elegant_solution);
+            instruction_add(STRING,STRDUP(buffer),NULL,0,0);
+
+            //loop body
+            generate(stream, root->children[2]);
+
+            //increment counter
+            instruction_add(MOVE, ebp, ebx, 0, 0);
+            for(int i = 0; i < depth - temp_node->entry->depth; i++){
+                instruction_add(STRING,  
+                        STRDUP("\tmovl\t(\%ebx), \%ebx"), NULL, 0, 0);
+            }
+            instruction_add(ADD, STRDUP("$1"), ebx, 0, temp_node->entry->stack_offset);
+
+
+            sprintf(buffer, "_start_for%d",elegant_solution);
+            instruction_add(JUMP, STRDUP(buffer), NULL, 0, 0);
+
+            sprintf(buffer, "end%d",elegant_solution); 
+            instruction_add(LABEL, STRDUP(buffer), NULL, 0, 0);
             break;
         default:
             /* Everything else can just continue through the tree */
