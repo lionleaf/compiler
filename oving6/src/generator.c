@@ -202,16 +202,19 @@ void generate ( FILE *stream, node_t *root )
                     //push string on stack
                     sprintf(buffer,"$.STRING%d",string_nr);
                     instruction_add(PUSH, STRDUP(buffer),NULL, 0, 0 );
-                    instruction_add(SYSCALL, STRDUP("printf"), NULL, 0, 0);
                     break;
                 case EXPRESSION:
                 case VARIABLE:
                     generate(stream,root->children[0]);
                     instruction_add(PUSH, STRDUP("$.INTEGER"), NULL, 0, 0);
-                    instruction_add(SYSCALL, STRDUP("printf"), NULL, 0, 0);
                     break;
+                case INTEGER:
+                    sprintf(buffer, "$%d",*((int32_t*)root->children[0]->data));
+                    instruction_add(PUSH,STRDUP(buffer),NULL,0,0);
+                    instruction_add(PUSH, STRDUP("$.INTEGER"), NULL, 0, 0);
             }
             
+            instruction_add(SYSCALL, STRDUP("printf"), NULL, 0, 0);
             break;
 
         case EXPRESSION:
