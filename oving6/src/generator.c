@@ -212,6 +212,7 @@ void generate ( FILE *stream, node_t *root )
                     sprintf(buffer, "$%d",*((int32_t*)root->children[0]->data));
                     instruction_add(PUSH,STRDUP(buffer),NULL,0,0);
                     instruction_add(PUSH, STRDUP("$.INTEGER"), NULL, 0, 0);
+                    break;
             }
             
             instruction_add(SYSCALL, STRDUP("printf"), NULL, 0, 0);
@@ -247,7 +248,7 @@ void generate ( FILE *stream, node_t *root )
                         instruction_add(CALL, STRDUP((char*) root->children[0]->data), NULL,0,0);
                         if(root->children[1]){
                             //remove parameters, I'll modify esp instead of multiple pops
-                            sprintf(buffer,"$%d",root->children[1]->n_children);
+                            sprintf(buffer,"$%d",root->children[1]->n_children*4);
                             instruction_add(ADD, STRDUP(buffer), esp, 0, 0);
                         }
 
